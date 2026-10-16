@@ -62,7 +62,7 @@ const car = buildCar();
 if (models.byUse.player) car.useModel(models.byUse.player, rigWheels(models.byUse.player));
 scene.add(car.group);
 const vehicle = new Vehicle(world, LAYOUT.start);
-const rig = new CameraRig(camera, world);
+const rig = new CameraRig(camera, world, { compact: isTouch });
 const smoke = new Smoke(scene, quality === 'high' ? 80 : 40);
 const audio = new CarAudio();
 const hud = new Hud(world);

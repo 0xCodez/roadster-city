@@ -5,8 +5,16 @@ import * as THREE from 'three';
 
 const STUNT_HOLD = 1.6; // seconds to keep the stunt camera after landing
 
+// How the chase camera reacts to speed. Phones in landscape are very wide, so the
+// same field of view makes the car look tiny there: they get a gentler zoom-out.
+const CHASE = {
+  normal: { dist: 6.6, distPerMs: 0.018, fov: 60, fovPerMs: 0.16, boostFov: 6, airDist: 2.5, airHeight: 1.6 },
+  compact: { dist: 6.2, distPerMs: 0.006, fov: 56, fovPerMs: 0.05, boostFov: 2, airDist: 1.2, airHeight: 0.8 },
+};
+
 export class CameraRig {
-  constructor(camera, world) {
+  constructor(camera, world, { compact = false } = {}) {
+    this.chase = compact ? CHASE.compact : CHASE.normal;
     this.camera = camera;
     this.world = world;
     this.mode = 'chase';
@@ -17,6 +25,9 @@ export class CameraRig {
     this.first = true;
     this.stuntTimer = 0;
     this.air = 0; // 0..1, eases the chase camera back while airborne
+    this.followOff = new THREE.Vector3(); // chase camera offset from the car
+    this.lookOff = new THREE.Vector3();
+    this.chasing = false;
     this._q = new THREE.Quaternion();
     this._flip = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.07, Math.PI, 0));
   }
@@ -39,6 +50,8 @@ export class CameraRig {
     if (stunting) this.stuntKind = vehicle.stunt;
     this.stuntTimer = stunting ? STUNT_HOLD : Math.max(0, this.stuntTimer - dt);
 
+    const wasChasing = this.chasing;
+    this.chasing = false;
     if (this.mode === 'cockpit') {
       car.cockpit.getWorldPosition(cam.position);
       car.cockpit.getWorldQuaternion(this._q);
@@ -85,17 +98,28 @@ export class CameraRig {
       this.yaw += d * (1 - Math.exp(-dt * (airborne ? 2.2 : 4)));
       this.air += ((airborne ? 1 : 0) - this.air) * (1 - Math.exp(-dt * 2));
       const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
-      const dist = 6.6 + Math.min(spd, 100) * 0.018 + this.air * 2.5;
+      const C = this.chase;
+      const dist = C.dist + Math.min(spd, 100) * C.distPerMs + this.air * C.airDist;
       const target = vehicle.pos.clone().addScaledVector(fwd, -dist);
-      target.y += 2.3 + Math.min(spd, 100) * 0.004 + this.air * 1.6;
+      target.y += 2.3 + Math.min(spd, 100) * 0.004 + this.air * C.airHeight;
       const lookAt = vehicle.pos.clone().addScaledVector(fwd, 3);
       lookAt.y += 0.9;
       if (this.first) { this.pos.copy(target); this.look.copy(lookAt); }
-      this.pos.lerp(target, 1 - Math.exp(-dt * 8));
-      this.look.lerp(lookAt, 1 - Math.exp(-dt * 12));
+      // Smooth the camera's offset from the car, not its world position: smoothing the
+      // position makes it trail further behind the faster you go (7-8 m at 225 km/h).
+      // Coming back from a stunt camera, start from wherever the camera is now.
+      if (this.first || !wasChasing) {
+        this.followOff.copy(this.pos).sub(vehicle.pos);
+        this.lookOff.copy(this.look).sub(vehicle.pos);
+      }
+      this.followOff.lerp(target.sub(vehicle.pos), 1 - Math.exp(-dt * 8));
+      this.lookOff.lerp(lookAt.sub(vehicle.pos), 1 - Math.exp(-dt * 12));
+      this.pos.copy(vehicle.pos).add(this.followOff);
+      this.look.copy(vehicle.pos).add(this.lookOff);
       cam.position.copy(this.pos);
       cam.lookAt(this.look);
-      cam.fov += (60 + Math.min(spd, 100) * 0.16 + (vehicle.rearThrust > 0.5 ? 6 : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
+      this.chasing = true;
+      cam.fov += (C.fov + Math.min(spd, 100) * C.fovPerMs + (vehicle.rearThrust > 0.5 ? C.boostFov : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
     }
     if (this.shake > 0.001) {
       cam.position.x += (Math.random() - 0.5) * this.shake;
