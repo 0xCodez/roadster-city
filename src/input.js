@@ -17,8 +17,10 @@ export function createInput({ onCamera, onMode, onReset, onSound, onWall, onKick
   let liftWas = false;
   const padWas = {};
 
+  // Typing a nickname must not drive the car or press shortcuts.
+  const typing = (e) => e.target instanceof Element && e.target.closest('input, textarea');
   addEventListener('keydown', (e) => {
-    if (e.repeat) return;
+    if (e.repeat || typing(e)) return;
     keys.add(e.code);
     if (e.code === 'KeyC' || e.code === 'KeyV') onCamera();
     if (e.code === 'KeyT') onMode();

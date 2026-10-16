@@ -33,6 +33,7 @@ export class Score {
     this.progress = {};
     try {
       this.best = Number(localStorage.getItem('rr-best') || 0);
+      this.points = Math.max(0, Number(localStorage.getItem('rr-points') || 0)) || 0; // the score survives a page reload
       this.done = new Set(JSON.parse(localStorage.getItem('rr-tasks') || '[]'));
     } catch {}
     this.drift = 0;
@@ -151,6 +152,7 @@ export class Score {
   add(points, label, kind = '') {
     if (points <= 0) return;
     this.points += points;
+    try { localStorage.setItem('rr-points', String(this.points)); } catch {}
     if (this.points > this.best) {
       this.best = this.points;
       try { localStorage.setItem('rr-best', String(this.best)); } catch {}
@@ -211,6 +213,15 @@ export class Score {
     if (vehicle.impact > 2 && this.drift > 0) this.drift = 0; // crashing ends the chain
     this.el.drift.textContent = this.drift > 50 ? `DRIFT ${Math.round(this.drift)}` : '';
     if (vehicle.speed * 3.6 >= 300) this.task('speed');
+    this.renderStars();
+  }
+
+  // Start over from zero (Settings). The best score and finished tasks stay.
+  resetPoints() {
+    this.points = 0;
+    this.streak = 0;
+    try { localStorage.setItem('rr-points', '0'); } catch {}
+    this.render();
     this.renderStars();
   }
 

@@ -10,8 +10,8 @@ const FLIP_HOLD = 0.7; // the flip camera hands back sooner: you land at speed
 // How the chase camera reacts to speed. Phones in landscape are very wide, so the
 // same field of view makes the car look tiny there: they get a gentler zoom-out.
 const CHASE = {
-  normal: { dist: 6.6, distPerMs: 0.018, fov: 60, fovPerMs: 0.16, boostFov: 6, airDist: 2.5, airHeight: 1.6 },
-  compact: { dist: 6.2, distPerMs: 0.006, fov: 56, fovPerMs: 0.05, boostFov: 2, airDist: 1.2, airHeight: 0.8 },
+  normal: { dist: 6.6, distPerMs: 0.018, fov: 60, fovPerMs: 0.16, boostFov: 12, airDist: 2.5, airHeight: 1.6 },
+  compact: { dist: 6.2, distPerMs: 0.006, fov: 56, fovPerMs: 0.05, boostFov: 6, airDist: 1.2, airHeight: 0.8 },
 };
 
 export class CameraRig {
@@ -54,7 +54,11 @@ export class CameraRig {
   update(dt, vehicle, car) {
     const cam = this.camera;
     const spd = vehicle.speed;
-    this.shake = Math.max(this.shake * Math.exp(-dt * 6), vehicle.impact * 0.02);
+    this.shake = Math.max(this.shake * Math.exp(-dt * 6), vehicle.impact * 0.02, vehicle.boosting ? 0.035 : 0);
+    // Nitro kick: the view punches wider the moment the boost fires, then settles.
+    if (vehicle.boosting && !this.wasBoosting) this.kick = 1;
+    this.wasBoosting = vehicle.boosting;
+    this.kick = (this.kick || 0) * Math.exp(-dt * 3);
     vehicle.impact = 0;
 
     const stunting = vehicle.state !== 'ground' && vehicle.stunt;
@@ -164,7 +168,7 @@ export class CameraRig {
       cam.position.copy(this.pos);
       cam.lookAt(this.look);
       this.chasing = true;
-      cam.fov += (C.fov + 18 * tall + Math.min(spd, 100) * C.fovPerMs + (vehicle.rearThrust > 0.5 ? C.boostFov : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
+      cam.fov += (C.fov + 18 * tall + Math.min(spd, 100) * C.fovPerMs + (vehicle.boosting ? C.boostFov : 0) + 10 * this.kick - cam.fov) * (1 - Math.exp(-dt * 4));
     }
     this.wasFlipping = flipCam;
     if (this.shake > 0.001) {

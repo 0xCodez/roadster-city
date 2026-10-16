@@ -247,7 +247,9 @@
         tricks: { kickflip: 2410, backflip: 1530, 'air time': 1490, 'wall climb': 1210, 'clean landing': 980, frontflip: 760, spin: 640, 'lineup cleared': 520, 'double kickflip': 310, 'perfect landing': 230, drift: 410, 'rooftop landing': 95 },
         events: { hop: 6120, release: 1210, launch: 990, crash: 1730, takeoff: 640, ring: 2210, refill: 300 },
         tasks: { wall: 1180, kickflip: 640, flip: 900, launch: 420, double: 180, hang: 610, combo: 230, rings5: 160, ringsAll: 12, rooftop: 140, speed: 520, stars5: 60 },
-        top: [48210, 41980, 39720, 33310, 29850, 27220, 25640, 22120, 20480, 19950].map((score, i) => ({ score, device: ['phone', 'desktop'][i % 2], country: ['US', 'RU', 'GB', 'DE', 'UA'][i % 5], date: daily[n - 1 - (i % 5)].date })),
+        top: [],
+        board: [['0xMovez', 98210], ['nitro_king', 81980], ['Лёха', 69720], ['kickflipper', 53310], ['RoadsterFan', 49850], ['Racer 7F2K', 37220], ['neon', 25640], ['GTA6waiting', 22120], ['jules', 20480], ['Racer Q1ZD', 19950]].map(([name, score], i) => ({ rank: i + 1, name, score })),
+        boardPlayers: 1874,
       };
     }
 
@@ -286,7 +288,11 @@
       bars($('events'), s.events, (k) => EVENT_NAMES[k] || cap(k), 8);
       bars($('tasks'), s.tasks, (k) => TASK_NAMES[k] || k, 8);
 
-      $('top').innerHTML = s.top.length
+      if (s.board) {
+        $('top').innerHTML = s.board.length
+          ? `<table><tr><th>#</th><th>Player</th><th>Score</th></tr>${s.board.slice(0, 10).map((t) => `<tr class="${t.rank === 1 ? 'gold' : ''}"><td class="rank">${t.rank}</td><td>${esc(t.name)}</td><td class="score">${fmt(t.score)}</td></tr>`).join('')}</table><div class="s" style="color:var(--muted);font-size:12px;margin-top:8px">${fmt(s.boardPlayers || 0)} players on the board</div>`
+          : '<div class="empty">No scores yet.</div>';
+      } else $('top').innerHTML = s.top.length
         ? `<table><tr><th>#</th><th>Score</th><th></th><th>Day</th></tr>${s.top.slice(0, 10).map((t, i) => `<tr class="${i === 0 ? 'gold' : ''}"><td class="rank">${i + 1}</td><td class="score">${fmt(t.score)}</td><td>${t.device === 'phone' ? '📱' : t.device === 'tablet' ? '📟' : '💻'} ${flag(t.country)}</td><td>${esc(t.date || '')}</td></tr>`).join('')}</table>`
         : '<div class="empty">No scores yet.</div>';
     }

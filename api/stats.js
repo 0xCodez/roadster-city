@@ -36,6 +36,8 @@ module.exports = async (req, res) => {
     ...['src', 'dev', 'os', 'geo', 'app', 'orient', 'tricks', 'events', 'tasks'].map((k) => ['HGETALL', `rc:${k}`]),
     ['ZREVRANGE', 'rc:top', 0, 19, 'WITHSCORES'],
     ['ZCOUNT', 'rc:live', now - 2 * 60 * 1000, '+inf'],
+    ['ZREVRANGE', 'rc:lb', 0, 19, 'WITHSCORES'], // the shared leaderboard
+    ['ZCARD', 'rc:lb'],
   ];
   try {
     const r = await pipeline(cmds);
@@ -55,6 +57,12 @@ module.exports = async (req, res) => {
       top.push({ score: Number(topFlat[j + 1]) || 0, device: dev, country, date });
     }
     const live = Number(r[i++]) || 0;
+    const lbFlat = r[i++] || [];
+    const lbPlayers = Number(r[i++]) || 0;
+    const ids = [], lbScores = [];
+    for (let j = 0; j + 1 < lbFlat.length; j += 2) { ids.push(lbFlat[j]); lbScores.push(Number(lbFlat[j + 1]) || 0); }
+    const names = ids.length ? (await pipeline([['HMGET', 'rc:lbname', ...ids]]))[0] || [] : [];
+    const board = ids.map((id, k) => ({ rank: k + 1, name: names[k] || `Racer ${id.slice(0, 4).toUpperCase()}`, score: lbScores[k] }));
     res.status(200).json({
       generated: now,
       live,
@@ -66,6 +74,8 @@ module.exports = async (req, res) => {
       totals: { visitors: allVisitors, pageviews: tot.pv || 0, plays: tot.plays || 0, minutes: Math.round((tot.sec || 0) / 60) },
       ...dims,
       top,
+      board,
+      boardPlayers: lbPlayers,
     });
   } catch (err) {
     res.status(502).json({ error: 'Database error' });

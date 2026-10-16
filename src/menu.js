@@ -92,6 +92,7 @@ export class Menu {
     this.root.querySelectorAll('.menu-body section').forEach((s) => s.classList.toggle('active', s.dataset.pane === name));
     if (name === 'tasks') this.score.renderTasks(document.getElementById('menu-tasks'));
     if (name === 'settings') this.renderSettings();
+    if (name === 'ranking') this.onRanking?.();
   }
 
   renderSettings() {
@@ -105,6 +106,7 @@ export class Menu {
       ['mode', 'DRIVE MODE', [['road', 'Road'], ['track', 'Track'], ['rocket', 'Rocket']]],
       ['slowmo', 'SLOW MOTION', [[true, 'On'], [false, 'Off']]],
       ['quality', 'GRAPHICS', [['low', 'Low'], ['high', 'High']]],
+      ['resetScore', 'SCORE', [['go', 'Reset to 0']]],
     ];
     const box = document.getElementById('menu-settings');
     box.innerHTML = '';

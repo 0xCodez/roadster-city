@@ -51,6 +51,14 @@ export class Hud {
     this.wreckTimer = 2;
   }
 
+  // Your place on the shared leaderboard, under the score.
+  setRank(data) {
+    const el = document.getElementById('rank');
+    const me = data && data.me;
+    el.classList.toggle('hidden', !(me && me.rank));
+    if (me && me.rank) el.textContent = `🏆 #${me.rank.toLocaleString('en-US')} of ${data.players.toLocaleString('en-US')}`;
+  }
+
   setCamera(mode) { document.getElementById('cam-label').textContent = mode === 'chase' ? 'CHASE' : 'COCKPIT'; }
   setSound() {}
 

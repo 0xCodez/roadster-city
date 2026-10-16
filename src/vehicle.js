@@ -57,10 +57,10 @@ const KICK_BOOST_T = 0.3; // s of full thrust at launch
 const HOP_VY = 8.2; // m/s, tap lift on the ground: a ~3.4 m hop
 const HOP_AIR = 330; // psi per hop
 const LIFT_VY = 2.5; // m/s, holding lift in the air climbs gently (it brakes any fall first)
-const BOOST_BASE = 6.5; // m/s², rear thrust at speed
-const BOOST_LAUNCH = 19.5; // extra m/s² from a standstill, gone by 40 m/s: 0-100 km/h in under 1 s
-const BOOST_USE = 825; // psi/s
-const AIR_BOOST = 9; // m/s², rear thrust in the air
+const BOOST_BASE = 10; // m/s², rear thrust ("nitro") at speed
+const BOOST_LAUNCH = 26; // extra m/s² from a standstill, gone by 40 m/s: 0-100 km/h in about 0.6 s
+const BOOST_USE = 412; // psi/s: a full tank gives ~13 s of boost
+const AIR_BOOST = 12; // m/s², rear thrust in the air
 const RCS_USE = 165; // psi/s while steering in the air
 
 // Attitude control in the air (rad/s at full input).
@@ -512,7 +512,9 @@ export class Vehicle {
     }
     // Rear thrusters (Shift) push along the nose.
     this.rearThrust = 0;
+    this.boosting = false;
     if (input.boost && this.air > 0) {
+      this.boosting = true;
       acc.addScaledVector(nose, AIR_BOOST);
       this.air = Math.max(0, this.air - BOOST_USE * dt);
       this.rearThrust = 1;
@@ -766,7 +768,7 @@ export class Vehicle {
       wheelSpeed: this.wheelSpeed,
       braking: this.braking,
       thrust: this.thrust,
-      rearThrust: this.rearThrust,
+      rearThrust: this.boosting ? 1.7 : this.rearThrust, // nitro: longer, brighter flames
       airborne: this.state === 'air' || this.state === 'fly' || this.state === 'crashed',
     };
   }

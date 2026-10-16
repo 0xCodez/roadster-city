@@ -26,6 +26,8 @@ import { Menu } from './menu.js';
 import { loadModels, rigWheels } from './models.js';
 import { X_HANDLE } from './config.js';
 import { createTelemetry } from './telemetry.js';
+import { SpeedLines } from './speedfx.js';
+import { createLeaderboard, renderBoard } from './leaderboard.js';
 
 // ?touch forces the phone layout (handy for testing on a desktop).
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
@@ -70,6 +72,7 @@ scene.add(car.group);
 const vehicle = new Vehicle(world, LAYOUT.start);
 const rig = new CameraRig(camera, world, { compact: isTouch });
 const smoke = new Smoke(scene, quality === 'high' ? 80 : 40);
+const speedLines = new SpeedLines(isTouch);
 const audio = new CarAudio();
 const hud = new Hud(world);
 const neon = buildNeon(scene, world.buildings, quality);
@@ -80,6 +83,20 @@ score.onTask = (t) => { telemetry.task(t.id); audio.chime(5); hud.bigBanner('TAS
 const telemetry = createTelemetry();
 telemetry.visit();
 score.onTrick = (name) => telemetry.trick(name);
+// Shared leaderboard: your rank under the score, the RANKING tab in the menu.
+const rankPane = () => document.querySelector('#menu section[data-pane="ranking"]');
+function renderRanking() {
+  renderBoard(document.getElementById('menu-rank'), lb.data, { name: lb.name, onName: (n) => lb.setName(n, score.points) });
+}
+const lb = createLeaderboard({
+  onUpdate(data) {
+    hud.setRank(data);
+    if (menu.open && rankPane()?.classList.contains('active')) renderRanking();
+  },
+});
+lb.refresh();
+addEventListener('pagehide', () => lb.flush(score.points));
+addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') lb.flush(score.points); });
 const COUNTED_EVENTS = new Set(['crash', 'hop', 'launch', 'release', 'takeoff', 'refill', 'fans']);
 hud.setRings(rings);
 const traffic = buildTraffic(scene, world, quality, models);
@@ -334,13 +351,16 @@ const menu = new Menu({
     } else if (key === 'sound') { if (audio.enabled !== val) audio.toggle(); }
     else if (key === 'camera') { if (rig.mode !== val) toggleCamera(); }
     else if (key === 'mode') setMode(val);
-    else if (key === 'slowmo') { score.slowmoOn = val; try { localStorage.setItem('rr-slowmo', val ? '1' : '0'); } catch {} }
+    else if (key === 'resetScore') {
+      if (confirm('Reset your score to 0? Your best on the leaderboard stays.')) score.resetPoints();
+    } else if (key === 'slowmo') { score.slowmoOn = val; try { localStorage.setItem('rr-slowmo', val ? '1' : '0'); } catch {} }
     else if (key === 'quality' && val !== quality) { try { localStorage.setItem('rr-quality', val); } catch {} location.reload(); }
   },
   getState: () => ({ time: atmosphere.time, rain: atmosphere.rain, radio: audio.radio.station, sound: audio.enabled, camera: rig.mode, mode: vehicle.mode, quality, slowmo: score.slowmoOn }),
 });
+menu.onRanking = () => { renderRanking(); lb.refresh(); };
 addEventListener('keydown', (e) => {
-  if (!playing) return;
+  if (!playing || (e.target instanceof Element && e.target.closest('input, textarea'))) return;
   if (e.code === 'Escape' || e.code === 'KeyP') menu.toggle('map', vehicle);
 });
 
@@ -372,8 +392,11 @@ const playBtn = document.getElementById('btn-play');
 playBtn.disabled = false;
 playBtn.textContent = 'Drive';
 let playing = false;
+const nickInput = document.getElementById('nick');
+nickInput.value = lb.name;
 playBtn.addEventListener('click', () => {
   telemetry.play();
+  lb.setName(nickInput.value, score.points);
   document.getElementById('start').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   document.body.classList.add('playing');
@@ -456,6 +479,7 @@ function tick(realDt, ctl) {
     }
     score.update(realDt, vehicle);
     telemetry.score(score.points);
+    lb.submit(score.points);
     telemetry.tick(realDt, !menu.open);
     launchTimer(dt, ctl);
     condition = Math.min(1, Math.max(0, condition) + dt * 0.04);
@@ -483,6 +507,7 @@ function tick(realDt, ctl) {
   audio.update(vehicle, ctl);
   if (playing) hud.update(realDt, vehicle, { condition, combo: score.streakFrac });
   document.body.classList.toggle('cine', score.timeScale < 1); // letterbox bars during slow-mo
+  if (playing) speedLines.update(realDt, vehicle);
 
   shadowTarget.copy(vehicle.pos);
   world.followShadow(shadowTarget);
@@ -490,4 +515,4 @@ function tick(realDt, ctl) {
 frame();
 
 // Handy for debugging from the console.
-window.__game = { models, menu, details, peds, honk, vehicle, car, world, rig, scene, camera, renderer, hud, smoke, traffic, atmosphere, neon, rings, score, tick, start: () => playBtn.click(), render: () => (composer ? composer.render() : renderer.render(scene, camera)) };
+window.__game = { lb, speedLines, models, menu, details, peds, honk, vehicle, car, world, rig, scene, camera, renderer, hud, smoke, traffic, atmosphere, neon, rings, score, tick, start: () => playBtn.click(), render: () => (composer ? composer.render() : renderer.render(scene, camera)) };
