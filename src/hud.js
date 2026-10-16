@@ -15,7 +15,7 @@ export class Hud {
       pitch: $('t-pitch'), alt: $('t-alt'), down: $('t-down'), g: $('t-g'), telemetry: $('telemetry'),
       banner: $('banner'), big: $('bigbanner'), radio: $('radio-name'), clock: $('clock'),
       hp: $('bar-hp'), air: $('bar-air'), combo: $('bar-combo'), arc: $('arc-fg'),
-      lift: $('ind-lift'), boost: $('ind-boost'), wrecked: $('wrecked'),
+      lift: $('ind-lift'), boost: $('ind-boost'), wrecked: $('wrecked'), tbLift: $('tb-lift'), tbBoost: $('tb-boost'),
     };
     this.wreckTimer = 0;
     this.bannerTimer = 0;
@@ -38,6 +38,8 @@ export class Hud {
     for (const b of document.querySelectorAll('#quickbar .mode')) b.classList.toggle('active', b.dataset.mode === mode);
     this.el.badge.textContent = mode.toUpperCase();
     this.el.badge.className = 'mode-badge ' + mode;
+    const label = document.getElementById('tb-mode-label');
+    if (label) label.textContent = mode.toUpperCase();
   }
 
   // Crash: GTA-style "wrecked" card while the thrusters right the car.
@@ -104,6 +106,9 @@ export class Hud {
     this.el.combo.style.width = (combo * 100).toFixed(1) + '%';
     this.el.lift.classList.toggle('on', vehicle.thrust > 0.15);
     this.el.boost.classList.toggle('on', vehicle.rearThrust > 0.15);
+    // On phones the LIFT / BOOST buttons glow while their thrusters fire.
+    this.el.tbLift?.classList.toggle('firing', vehicle.thrust > 0.15);
+    this.el.tbBoost?.classList.toggle('firing', vehicle.rearThrust > 0.15);
     if (this.wreckTimer > 0) {
       this.wreckTimer -= dt;
       if (this.wreckTimer <= 0) { this.el.wrecked.classList.remove('show'); document.body.classList.remove('wrecked'); }

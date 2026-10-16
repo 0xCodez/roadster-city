@@ -12,7 +12,7 @@ function capture(el, id) {
 
 export function createInput({ onCamera, onMode, onReset, onSound, onWall, onKickflip, onRocket, onTime, onRain, onRadio, onTasks, onHorn, onMenu }) {
   const keys = new Set();
-  const touch = { steer: 0, gas: false, brake: false, drift: false, lift: false, boost: false };
+  const touch = { steer: 0, pitch: 0, gas: false, brake: false, drift: false, lift: false, boost: false };
   let steer = 0;
   let liftWas = false;
   const padWas = {};
@@ -37,30 +37,48 @@ export function createInput({ onCamera, onMode, onReset, onSound, onWall, onKick
   addEventListener('keyup', (e) => keys.delete(e.code));
   addEventListener('blur', () => keys.clear());
 
-  // ---- Touch: joystick ----
+  // ---- Touch: floating joystick ----
+  // It appears under the thumb wherever the left side of the screen is touched.
+  // Left/right steers (rolls in the air); up/down flips the car in the air.
+  const zone = document.getElementById('stick-zone');
   const stick = document.getElementById('stick');
   const knob = document.getElementById('knob');
-  let stickId = null, cx = 0;
-  stick.addEventListener('pointerdown', (e) => {
+  let stickId = null, cx = 0, cy = 0;
+  zone.addEventListener('pointerdown', (e) => {
+    if (stickId !== null) return;
+    e.preventDefault();
     stickId = e.pointerId;
-    capture(stick, e.pointerId);
-    const r = stick.getBoundingClientRect();
-    cx = r.left + r.width / 2;
+    capture(zone, e.pointerId);
+    const z = zone.getBoundingClientRect(), r = stick.offsetWidth / 2;
+    cx = Math.max(z.left + r, Math.min(z.right - r, e.clientX));
+    cy = Math.max(z.top + r, Math.min(z.bottom - r, e.clientY));
+    stick.style.left = `${cx - z.left - r}px`;
+    stick.style.top = `${cy - z.top - r}px`;
+    stick.style.bottom = 'auto';
+    stick.classList.add('active');
     moveStick(e);
   });
-  stick.addEventListener('pointermove', (e) => { if (e.pointerId === stickId) moveStick(e); });
+  zone.addEventListener('pointermove', (e) => { if (e.pointerId === stickId) moveStick(e); });
   const endStick = (e) => {
     if (e.pointerId !== stickId) return;
     stickId = null;
-    touch.steer = 0;
+    touch.steer = touch.pitch = 0;
     knob.style.transform = '';
+    stick.style.left = stick.style.top = stick.style.bottom = '';
+    stick.classList.remove('active');
   };
-  stick.addEventListener('pointerup', endStick);
-  stick.addEventListener('pointercancel', endStick);
+  zone.addEventListener('pointerup', endStick);
+  zone.addEventListener('pointercancel', endStick);
+  zone.addEventListener('lostpointercapture', endStick);
   function moveStick(e) {
-    const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / 50));
-    touch.steer = -dx;
-    knob.style.transform = `translateX(${dx * 38}px)`;
+    const R = stick.offsetWidth * 0.42;
+    let dx = (e.clientX - cx) / R, dy = (e.clientY - cy) / R;
+    const len = Math.hypot(dx, dy);
+    if (len > 1) { dx /= len; dy /= len; }
+    knob.style.transform = `translate(${dx * R}px, ${dy * R}px)`;
+    const dead = (v) => (Math.abs(v) < 0.12 ? 0 : (Math.sign(v) * (Math.abs(v) - 0.12)) / 0.88);
+    touch.steer = -dead(dx);
+    touch.pitch = -dead(dy); // stick up = front flip
   }
 
   // ---- Touch: buttons ----
@@ -95,7 +113,7 @@ export function createInput({ onCamera, onMode, onReset, onSound, onWall, onKick
     out.throttle = Math.max(out.throttle, val(7));
     out.brake = Math.max(out.brake, val(6));
     if (axis(0)) out.steer = -axis(0);
-    out.pitch = -axis(1); // left stick up = front flip in the air
+    if (axis(1)) out.pitch = -axis(1); // left stick up = front flip in the air
     out.lift ||= btn(0); // A
     out.boost ||= btn(5) || btn(2); // RB or X
     out.drift ||= btn(1) || btn(4); // B or LB
@@ -121,12 +139,9 @@ export function createInput({ onCamera, onMode, onReset, onSound, onWall, onKick
         lift: keys.has('Space') || touch.lift,
         boost: keys.has('ShiftLeft') || keys.has('ShiftRight') || touch.boost,
         descend: keys.has('KeyX'),
-        pitch: 0,
+        pitch: touch.pitch,
       };
-      readPad(out);
-      // In the air the stick's vertical axis flips the car.
-      if (out.pitch > 0) out.throttle = Math.max(out.throttle, out.pitch);
-      else if (out.pitch < 0) out.brake = Math.max(out.brake, -out.pitch);
+      readPad(out); // in the air, the stick's vertical axis (pitch) flips the car
       out.liftPressed = out.lift && !liftWas;
       liftWas = out.lift;
       return out;

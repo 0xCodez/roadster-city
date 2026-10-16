@@ -132,10 +132,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding: 5px 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.12em;
 }
 .cam-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linejoin: round; }
-body.touch #quickbar { right: auto; left: 72px; top: 16px; bottom: auto; flex-direction: row; align-items: center; }
-body.touch #quickbar .mode { padding: 6px 9px; font-size: 11px; }
-body.touch .cam-btn { padding: 5px 9px; font-size: 11px; }
-body.touch #radio-name { top: 6px; font-size: 18px; }
 
 .round-btn {
   position: absolute; left: max(18px, env(safe-area-inset-left)); top: 16px; width: 42px; height: 42px; border-radius: 50%;
@@ -148,51 +144,6 @@ body.touch #radio-name { top: 6px; font-size: 18px; }
   font-size: 13px; letter-spacing: 0.06em; color: #e8e8e8; background: var(--panel);
   padding: 6px 14px; white-space: nowrap; transition: opacity 1s;
 }
-
-/* ---------- Touch (GTA mobile style) ---------- */
-#touch { position: fixed; inset: 0; pointer-events: none; }
-#stick {
-  position: absolute; left: max(28px, env(safe-area-inset-left)); bottom: 175px;
-  width: 130px; height: 130px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.12));
-  border: 2px solid rgba(255, 255, 255, 0.55); pointer-events: auto; touch-action: none;
-}
-#knob {
-  position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-#touch-buttons {
-  position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: 16px;
-  display: grid; grid-template-columns: repeat(4, 58px); grid-template-areas: "lift mode horn cam" "lift drift brake gas" "boost drift brake gas";
-  gap: 10px; pointer-events: auto;
-}
-.tb {
-  width: 58px; height: 58px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.45); border: 2px solid rgba(255, 255, 255, 0.8); touch-action: none; font-size: 10px; letter-spacing: 0.1em;
-}
-.tb.small { width: 50px; height: 50px; justify-self: center; }
-#tb-mode { grid-area: mode; } #tb-horn { grid-area: horn; } #tb-cam { grid-area: cam; }
-#tb-drift { grid-area: drift; align-self: center; }
-#tb-lift { grid-area: lift; align-self: end; background: rgba(80, 170, 255, 0.35); }
-#tb-boost { grid-area: boost; align-self: start; background: rgba(255, 120, 60, 0.35); }
-#tb-brake { grid-area: brake; } #tb-gas { grid-area: gas; }
-.tb.pedal { height: 126px; border-radius: 16px; }
-.tb.pedal svg { width: 30px; height: 40px; }
-.tb.gas { background: rgba(80, 200, 120, 0.35); }
-.tb.pressed { background: rgba(255, 255, 255, 0.45); transform: scale(0.95); }
-body.touch #hint { display: none; }
-body.touch #radar { width: 172px; bottom: 10px; }
-body.touch #minimap { width: 164px; height: 100px; }
-body.touch #speedo { width: 130px; height: 130px; right: auto; left: 200px; bottom: 6px; }
-body.touch .speed-num { top: 40px; font-size: 32px; }
-body.touch .speed-unit { top: 78px; }
-body.touch .mode-badge { bottom: 10px; font-size: 10px; }
-body.touch #score { font-size: 28px; }
-body.touch #clock { font-size: 16px; }
-body.touch #stars { font-size: 16px; }
-body.touch #banner { font-size: 28px; top: 19%; }
-body.touch .big-title { font-size: 40px; }
-body.touch #telemetry { font-size: 10px; line-height: 1.45; top: 112px; transform: none; display: grid; grid-template-columns: auto auto; gap: 0 10px; padding: 3px 8px; }
 
 /* ---------- Pause menu ---------- */
 #menu {
@@ -301,11 +252,6 @@ body.wrecked #game { filter: grayscale(0.85) contrast(1.1); transition: filter 0
 }
 #ind-lift.on { color: #fff; background: #2a7fd6; border-color: #5fb6ff; }
 #ind-boost.on { color: #fff; background: #d65a2a; border-color: #ff9a6a; }
-body.touch #speedo .thr { left: 0; right: 0; bottom: auto; top: -18px; flex-direction: row; justify-content: center; }
-body.touch #combo { top: 35%; font-size: 26px; }
-body.touch #trick-feed { top: calc(35% + 32px); }
-body.touch .trick { font-size: 17px; }
-body.touch .w-title { font-size: 48px; }
 /* Start screen key list */
 .start-card .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 18px; font-size: 13px; color: #bbb; letter-spacing: 0.04em; }
 .start-card .keys b { color: #fff; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.35); padding: 0 5px; margin-right: 4px; border-radius: 3px; }
@@ -319,3 +265,141 @@ body.touch .start-card .keys { display: none; }
 .share-x svg { width: 15px; height: 15px; fill: #fff; }
 .share-x:hover { border-color: #fff; }
 .menu-foot .share-x { margin: 0 0 0 18px; padding: 5px 12px; font-size: 12px; vertical-align: middle; }
+
+/* ---------- Phone layout ----------
+   Left thumb: a stick that appears wherever it touches. Right thumb: GAS with an arc of
+   BRAKE / DRIFT / LIFT / BOOST around it. Radar top left, a small speedometer at the
+   bottom centre, score top right with three small buttons next to it. Sizes follow the
+   screen height (--u), so the same layout fits an iPhone SE and a big Android. */
+body.touch {
+  --u: clamp(44px, 13.5vh, 62px);
+  touch-action: none; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+body.touch #hint, body.touch #quickbar, body.touch #telemetry, body.touch #speedo .thr,
+body.touch #fps, body.touch #airtext { display: none !important; }
+
+#touch { position: fixed; inset: 0; pointer-events: none; }
+#stick-zone { position: absolute; left: 0; bottom: 0; width: 46%; height: 74%; pointer-events: auto; touch-action: none; }
+#stick {
+  position: absolute; left: calc(env(safe-area-inset-left) + 26px); bottom: 22px;
+  width: calc(var(--u) * 2); height: calc(var(--u) * 2); border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0.1));
+  border: 1.5px solid rgba(255, 255, 255, 0.35); opacity: 0.5; transition: opacity 0.2s;
+}
+#stick.active { opacity: 1; transition: none; }
+#knob {
+  position: absolute; left: 50%; top: 50%; border-radius: 50%;
+  width: calc(var(--u) * 0.86); height: calc(var(--u) * 0.86); margin: calc(var(--u) * -0.43) 0 0 calc(var(--u) * -0.43);
+  background: rgba(255, 255, 255, 0.88); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.tb {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  border-radius: 50%; background: rgba(10, 10, 14, 0.36); border: 1.5px solid rgba(255, 255, 255, 0.5); color: #fff;
+  font: 600 calc(var(--u) * 0.15) / 1 var(--hud-font); letter-spacing: 0.08em; touch-action: none;
+  -webkit-tap-highlight-color: transparent; transition: transform 0.06s, background 0.1s, box-shadow 0.15s;
+}
+.tb svg { width: calc(var(--u) * 0.34); height: calc(var(--u) * 0.34); fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tb.pressed { background: rgba(255, 255, 255, 0.32); transform: scale(0.93); }
+
+/* Right-thumb cluster: GAS in the corner, the rest on an arc around it. */
+#touch-buttons {
+  position: absolute; right: calc(env(safe-area-inset-right) + 14px); bottom: 14px;
+  width: calc(var(--u) * 2.75); height: calc(var(--u) * 2.75); pointer-events: auto;
+}
+.tb.act { position: absolute; width: calc(var(--u) * 0.88); height: calc(var(--u) * 0.88); }
+.tb.gas {
+  right: 0; bottom: 0; width: calc(var(--u) * 1.45); height: calc(var(--u) * 1.45); font-size: calc(var(--u) * 0.2);
+  background: rgba(40, 190, 110, 0.3); border-color: rgba(150, 255, 190, 0.85);
+}
+.tb.gas svg { width: calc(var(--u) * 0.48); height: calc(var(--u) * 0.48); fill: #fff; }
+.tb.brake { right: calc(var(--u) * 1.87); bottom: calc(var(--u) * 0.06); background: rgba(220, 50, 50, 0.24); border-color: rgba(255, 140, 140, 0.8); }
+.tb.brake svg { fill: #fff; stroke: none; }
+.tb.drift { right: calc(var(--u) * 1.7); bottom: calc(var(--u) * 1.04); }
+.tb.lift { right: calc(var(--u) * 0.99); bottom: calc(var(--u) * 1.72); background: rgba(60, 150, 255, 0.28); border-color: rgba(140, 200, 255, 0.85); }
+.tb.boost { right: calc(var(--u) * 0.01); bottom: calc(var(--u) * 1.86); background: rgba(255, 110, 50, 0.28); border-color: rgba(255, 180, 130, 0.85); }
+.tb.lift.firing { box-shadow: 0 0 14px rgba(90, 170, 255, 0.9); background: rgba(60, 150, 255, 0.55); }
+.tb.boost.firing { box-shadow: 0 0 14px rgba(255, 130, 60, 0.9); background: rgba(255, 110, 50, 0.55); }
+
+/* Mode, camera, horn: small, next to the score. */
+#touch-top {
+  position: absolute; top: 10px; right: calc(env(safe-area-inset-right) + 138px);
+  display: flex; gap: 8px; pointer-events: auto;
+}
+.tb.tiny { width: calc(var(--u) * 0.74); height: calc(var(--u) * 0.74); background: rgba(0, 0, 0, 0.4); border-color: rgba(255, 255, 255, 0.4); }
+.tb.tiny svg { width: calc(var(--u) * 0.32); height: calc(var(--u) * 0.32); }
+#tb-mode-label { font-size: calc(var(--u) * 0.14); letter-spacing: 0.04em; }
+
+/* HUD on phones */
+body.touch .round-btn { left: calc(env(safe-area-inset-left) + 12px); top: 10px; width: 36px; height: 36px; border-width: 1.5px; }
+body.touch .round-btn svg { width: 18px; height: 18px; }
+body.touch #radar { left: calc(env(safe-area-inset-left) + 56px); top: 8px; bottom: auto; width: 146px; padding: 3px; }
+body.touch #minimap { width: 140px; height: 86px; }
+body.touch .bars { margin-top: 3px; gap: 2px; }
+body.touch .bar { height: 5px; }
+body.touch #speedo { left: 50%; right: auto; bottom: 2px; transform: translateX(-50%); width: calc(var(--u) * 2.1); height: calc(var(--u) * 2.1); }
+body.touch #ticks text { display: none; }
+body.touch .speed-num { top: 27%; font-size: calc(var(--u) * 0.6); }
+body.touch .speed-unit { top: 61%; font-size: 9px; letter-spacing: 0.16em; }
+body.touch .mode-badge { bottom: 4%; font-size: 9px; padding: 1px 6px; }
+body.touch #topinfo { top: 8px; right: calc(env(safe-area-inset-right) + 12px); }
+body.touch #clock { font-size: 14px; }
+body.touch #score { font-size: 26px; }
+body.touch .score-ico { font-size: 18px; }
+body.touch #stars { font-size: 13px; letter-spacing: 1px; }
+body.touch .score-best { font-size: 10px; }
+body.touch #toasts { margin-top: 4px; }
+body.touch #toasts .toast:nth-child(n + 3) { display: none; }
+body.touch .toast { font-size: 15px; }
+body.touch .toast small { font-size: 11px; }
+body.touch #radio-name { top: 6px; font-size: 18px; }
+body.touch #banner { font-size: 24px; top: 19%; }
+body.touch #banner small { font-size: 13px; }
+body.touch #drift-meter { font-size: 22px; top: 27%; }
+body.touch .big-title { font-size: 38px; }
+body.touch .big-sub { font-size: 14px; }
+body.touch #combo { top: 34%; font-size: 24px; }
+body.touch #combo-mult { font-size: 20px; }
+body.touch #trick-feed { top: calc(34% + 30px); }
+body.touch .trick { font-size: 16px; }
+body.touch .trick.banked { font-size: 19px; }
+body.touch .w-title { font-size: 46px; }
+body.touch .w-sub { font-size: 13px; }
+
+/* Pause menu: a Resume button on phones, the Esc hint on desktops. */
+.menu-foot .resume { display: none; }
+.menu-foot em { font-style: normal; }
+body.touch .menu-foot .resume {
+  display: inline-block; padding: 8px 18px; border: 0; background: linear-gradient(90deg, #ff9a3c, #ff3fb4);
+  font: 400 16px var(--big-font); letter-spacing: 0.08em; color: #fff;
+}
+body.touch .menu-foot .esc, body.touch .menu-foot .esc-text { display: none; }
+
+/* Short screens (phones in landscape): compact start screen and menu. */
+@media (max-height: 500px) {
+  .logo span:first-child { font-size: 46px; }
+  .logo span:last-child { font-size: 36px; }
+  .start-card .sub { margin: 8px 0 12px; font-size: 13px; line-height: 1.35; }
+  #btn-play { padding: 9px 44px; font-size: 20px; }
+  .quality { margin-top: 10px; font-size: 12px; }
+  .share-x { margin-top: 10px; padding: 6px 14px; font-size: 12px; }
+  .disclaimer { margin-top: 10px; font-size: 10px; }
+  .menu-top { padding: 8px 16px 0; display: flex; align-items: flex-end; gap: 18px; }
+  .menu-title { font-size: 22px; padding-bottom: 6px; }
+  .menu-tabs { margin-top: 0; flex: 1; }
+  .menu-tabs button { padding: 7px 12px; font-size: 12px; }
+  .menu-body { padding: 10px 16px; }
+  .menu-body section.active { flex-wrap: nowrap; gap: 14px; }
+  #menu-map { width: auto; height: calc(100vh - 112px); max-width: 64vw; }
+  .warp-list { min-width: 0; flex: 1; gap: 5px; }
+  .warp-list button { padding: 6px 10px; font-size: 12px; }
+  .task { padding: 6px 0; font-size: 13px; }
+  .task .bonus { font-size: 14px; }
+  .set-row { padding: 5px 0; }
+  .set-row .label { width: 120px; font-size: 12px; }
+  .set-row button { padding: 5px 10px; font-size: 12px; }
+  table.controls { font-size: 12px; }
+  table.controls td { padding: 5px 10px 5px 0; }
+  .menu-foot { padding: 6px 16px 10px; font-size: 12px; }
+}

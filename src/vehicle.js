@@ -529,7 +529,7 @@ export class Vehicle {
   // for a moment it levels itself, keeping its heading.
   attitude(dt, input) {
     const target = new THREE.Vector3(
-      (input.throttle - input.brake) * PITCH_RATE,
+      THREE.MathUtils.clamp(input.throttle - input.brake + (input.pitch || 0), -1, 1) * PITCH_RATE,
       (input.yaw || 0) * YAW_RATE,
       -input.steer * ROLL_RATE,
     );

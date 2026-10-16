@@ -26,7 +26,8 @@ import { Menu } from './menu.js';
 import { loadModels, rigWheels } from './models.js';
 import { X_HANDLE } from './config.js';
 
-const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+// ?touch forces the phone layout (handy for testing on a desktop).
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
 if (isTouch) document.body.classList.add('touch');
 
 // Quality: remembered per device, defaults to low on phones.
@@ -168,6 +169,7 @@ const tap = (id, fn) => document.getElementById(id).addEventListener('pointerdow
 tap('tb-mode', nextMode);
 tap('tb-horn', honk);
 document.getElementById('btn-menu').addEventListener('click', () => menu.toggle('map', vehicle));
+document.querySelector('#menu .resume').addEventListener('click', () => menu.close());
 // Mode switch and camera button on the main screen.
 document.querySelectorAll('#quickbar .mode').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
 document.getElementById('btn-cam').addEventListener('click', toggleCamera);
@@ -375,7 +377,7 @@ playBtn.addEventListener('click', () => {
 });
 
 // ---- Loop ----
-const IDLE = { throttle: 0, brake: 0, steer: 0, drift: false, yaw: 0, lift: false, liftPressed: false, boost: false, descend: false };
+const IDLE = { throttle: 0, brake: 0, steer: 0, pitch: 0, drift: false, yaw: 0, lift: false, liftPressed: false, boost: false, descend: false };
 const clock = new THREE.Clock();
 const STEP = 1 / 120;
 let acc = 0, time = 0, screenTimer = 0;

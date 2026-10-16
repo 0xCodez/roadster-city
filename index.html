@@ -110,18 +110,20 @@
     <div id="hint">Space jump · Shift boost · Q/E drift · air: W/S flip, A/D roll · C camera · Esc menu</div>
   </div>
 
-  <!-- Touch controls -->
+  <!-- Touch controls: a floating stick under the left thumb, an arc of buttons under the right -->
   <div id="touch" class="hidden">
-    <div id="stick"><div id="knob"></div></div>
+    <div id="stick-zone"><div id="stick"><div id="knob"></div></div></div>
+    <div id="touch-top">
+      <button id="tb-mode" class="tb tiny" aria-label="Drive mode"><span id="tb-mode-label">TRACK</span></button>
+      <button id="tb-cam" class="tb tiny" aria-label="Camera"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2h6l2 2h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" /></svg></button>
+      <button id="tb-horn" class="tb tiny" aria-label="Horn"><svg viewBox="0 0 24 24"><path d="M3 10v4h3l7 4V6L6 10H3zM16 9c1 1 1 5 0 6M19 7c2 2.5 2 7.5 0 10" /></svg></button>
+    </div>
     <div id="touch-buttons">
-      <button id="tb-mode" class="tb small" aria-label="Mode"><svg viewBox="0 0 24 24"><path d="M3 15l2-5c.4-1 1.2-1.6 2.3-1.6h9.4c1.1 0 1.9.6 2.3 1.6l2 5v3h-2a2 2 0 0 1-4 0H9a2 2 0 0 1-4 0H3z" /></svg></button>
-      <button id="tb-horn" class="tb small" aria-label="Horn"><svg viewBox="0 0 24 24"><path d="M3 10v4h3l7 4V6L6 10H3zM16 9c1 1 1 5 0 6M19 7c2 2.5 2 7.5 0 10" /></svg></button>
-      <button id="tb-cam" class="tb small" aria-label="Camera"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2h6l2 2h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" /></svg></button>
-      <button id="tb-lift" class="tb mid" aria-label="Lift"><svg viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6M5 21h14" /></svg><span>LIFT</span></button>
-      <button id="tb-boost" class="tb mid" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M4 12h9M9 7l5 5-5 5M16 7l5 5-5 5" /></svg><span>BOOST</span></button>
-      <button id="tb-drift" class="tb mid" aria-label="Drift"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 4v5M12 15v5M4 12h5M15 12h5" /></svg><span>DRIFT</span></button>
-      <button id="tb-brake" class="tb pedal" aria-label="Brake"><svg viewBox="0 0 24 32"><rect x="3" y="3" width="18" height="26" rx="4" /><path d="M7 9h10M7 14h10M7 19h10M7 24h10" /></svg></button>
-      <button id="tb-gas" class="tb pedal gas" aria-label="Throttle"><svg viewBox="0 0 24 32"><rect x="5" y="2" width="14" height="28" rx="4" /><path d="M9 7v18M12 7v18M15 7v18" /></svg></button>
+      <button id="tb-boost" class="tb act boost" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M4 12h9M9 7l5 5-5 5M16 7l5 5-5 5" /></svg><span>BOOST</span></button>
+      <button id="tb-lift" class="tb act lift" aria-label="Lift"><svg viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6M5 21h14" /></svg><span>LIFT</span></button>
+      <button id="tb-drift" class="tb act drift" aria-label="Drift"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 4v5M12 15v5M4 12h5M15 12h5" /></svg><span>DRIFT</span></button>
+      <button id="tb-brake" class="tb act brake" aria-label="Brake"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg><span>BRAKE</span></button>
+      <button id="tb-gas" class="tb act gas" aria-label="Throttle"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" /></svg><span>GAS</span></button>
     </div>
   </div>
 
@@ -164,7 +166,7 @@
         </table>
       </section>
     </div>
-    <div class="menu-foot"><span>ESC</span> Resume <button class="share-x" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7 8 10.3h-6.3l-4.9-6.4L5.3 21H2.2l7.3-8.3L1.9 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z" /></svg>Share your score</button></div>
+    <div class="menu-foot"><button class="resume" type="button">▶ RESUME</button><span class="esc">ESC</span> <em class="esc-text">Resume</em> <button class="share-x" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7 8 10.3h-6.3l-4.9-6.4L5.3 21H2.2l7.3-8.3L1.9 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z" /></svg>Share your score</button></div>
   </div>
 
   <!-- Start screen -->
