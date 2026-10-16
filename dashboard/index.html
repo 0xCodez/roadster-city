@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Roadster City HQ</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* Dark-only internal page, matching the game. Chart colors validated against
+       --surface with the dataviz palette checker (blue/orange: all checks pass). */
+    :root {
+      color-scheme: dark;
+      --bg: #0d0a14;
+      --surface: #15111d;
+      --surface-2: #1d1828;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #ffffff;
+      --text-2: #c3c2b7;
+      --muted: #8d8a99;
+      --s1: #3987e5; /* visitors / bars */
+      --s2: #d95926; /* plays */
+      --s3: #199e70; /* minutes */
+      --good: #0ca30c;
+      --critical: #d03b3b;
+      --hud: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
+      --big: 'Anton', 'Impact', 'Oswald', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--hud); }
+    body { min-height: 100vh; background: radial-gradient(1200px 500px at 15% -10%, rgba(255, 63, 180, 0.12), transparent 60%), radial-gradient(900px 500px at 100% 0%, rgba(57, 135, 229, 0.12), transparent 60%), var(--bg); }
+    button, input { font: inherit; color: inherit; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 22px 20px 40px; }
+
+    header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 20px; }
+    .brand { font-family: var(--big); font-size: 30px; letter-spacing: 0.03em; line-height: 1; }
+    .brand .g { background: linear-gradient(180deg, #ffe2a8, #ff9a3c 45%, #ff3fb4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .brand .c { color: #3fd8ff; font-style: italic; margin-left: 6px; }
+    .brand small { font-family: var(--hud); font-size: 13px; letter-spacing: 0.2em; color: var(--muted); margin-left: 10px; vertical-align: 6px; }
+    .live { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; letter-spacing: 0.04em; }
+    .live i { width: 9px; height: 9px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 rgba(12, 163, 12, 0.7); animation: pulse 1.8s infinite; }
+    .live.zero i { background: var(--muted); animation: none; }
+    @keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(12, 163, 12, 0); } 100% { box-shadow: 0 0 0 0 rgba(12, 163, 12, 0); } }
+    .spacer { flex: 1; }
+    .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+    .seg button { border: 0; background: transparent; padding: 6px 14px; border-radius: 6px; font-size: 13px; letter-spacing: 0.1em; color: var(--text-2); cursor: pointer; }
+    .seg button.on { background: #fff; color: #111; }
+    .ghost { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 8px; font-size: 13px; letter-spacing: 0.06em; color: var(--text-2); cursor: pointer; }
+    .ghost:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+    .updated { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+    .demo-badge { font-size: 12px; letter-spacing: 0.16em; padding: 4px 10px; border-radius: 4px; background: #fab219; color: #111; font-weight: 600; }
+
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+    .kpi .l { font-size: 12px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+    .kpi .v { font-family: var(--big); font-size: 34px; line-height: 1.1; margin-top: 6px; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+    .kpi .s { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+    .card h2 { margin: 0 0 12px; font-size: 14px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); display: flex; align-items: center; gap: 12px; }
+    .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); font-weight: 400; letter-spacing: 0.04em; text-transform: none; margin-left: auto; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend b { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+    svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+    .gridline { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
+    .axis { fill: var(--muted); font: 400 11px var(--hud); }
+    .endlabel { font: 500 12px var(--hud); fill: var(--text); }
+    .hit { fill: transparent; cursor: crosshair; }
+
+    .bars { display: flex; flex-direction: column; gap: 7px; }
+    h3.sub { margin: 16px 0 10px; font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .bar { display: grid; grid-template-columns: minmax(70px, 38%) 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+    .bar .name { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar .track { height: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 0 4px 4px 0; }
+    .bar .fill { height: 100%; background: var(--s1); border-radius: 0 4px 4px 0; min-width: 2px; }
+    .bar .val { font-variant-numeric: tabular-nums; color: var(--text); min-width: 54px; text-align: right; }
+    .bar .val small { color: var(--muted); margin-left: 4px; }
+    .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 8px 8px 0; }
+    td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    td.rank { color: var(--muted); width: 34px; }
+    td.score { font-family: var(--big); font-size: 18px; letter-spacing: 0.02em; }
+    tr.gold td.score { color: #f5c542; }
+    details { margin-top: 10px; font-size: 13px; color: var(--text-2); }
+    details summary { cursor: pointer; color: var(--muted); letter-spacing: 0.06em; }
+    details table { margin-top: 8px; font-size: 13px; }
+
+    #tip { position: fixed; pointer-events: none; background: #0b0910; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.5; opacity: 0; transition: opacity 0.08s; z-index: 9; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
+    #tip .k { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+    #tip b { font-weight: 600; }
+
+    footer { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; margin-top: 18px; }
+
+    /* Sign-in */
+    #login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    #login form { width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px; text-align: center; }
+    #login .brand { font-size: 34px; margin-bottom: 4px; }
+    #login p { color: var(--text-2); font-size: 14px; margin: 6px 0 18px; }
+    #login input { width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18); background: var(--surface-2); font-size: 15px; outline: none; }
+    #login input:focus { border-color: #3fd8ff; }
+    #login button { width: 100%; margin-top: 12px; padding: 11px; border: 0; border-radius: 8px; background: linear-gradient(90deg, #ff9a3c, #ff3fb4); font-family: var(--big); font-size: 18px; letter-spacing: 0.08em; cursor: pointer; }
+    #login .err { color: #ff8a8a; font-size: 13px; min-height: 18px; margin-top: 10px; }
+    #login .alt { display: block; margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .setup { text-align: left; font-size: 13px; color: var(--text-2); line-height: 1.6; margin-top: 10px; }
+    .setup code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: #fff; }
+    .hidden { display: none !important; }
+
+    @media (max-width: 1000px) {
+      .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .row2, .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .wrap { padding: 16px 16px 30px; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi .v { font-size: 28px; }
+      .brand { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="login" class="hidden">
+    <form>
+      <div class="brand"><span class="g">ROADSTER</span><span class="c">CITY</span></div>
+      <p>HQ · visitors and play stats</p>
+      <input id="pw" type="password" placeholder="Dashboard password" autocomplete="current-password" required />
+      <button type="submit">OPEN</button>
+      <div class="err" id="err"></div>
+      <div class="setup hidden" id="setup"></div>
+      <a class="alt" href="?demo">See it with demo data</a>
+    </form>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="wrap">
+      <header>
+        <div class="brand"><span class="g">ROADSTER</span><span class="c">CITY</span><small>HQ</small></div>
+        <div class="live" id="live"><i></i><span>—</span></div>
+        <span class="demo-badge hidden" id="demo">DEMO DATA</span>
+        <div class="spacer"></div>
+        <span class="updated" id="updated"></span>
+        <div class="seg" id="range"><button data-d="7">7D</button><button data-d="30" class="on">30D</button></div>
+        <button class="ghost" id="refresh" type="button">Refresh</button>
+        <button class="ghost" id="out" type="button">Sign out</button>
+      </header>
+
+      <section class="kpis" id="kpis"></section>
+
+      <section class="row2">
+        <div class="card">
+          <h2>Visitors and plays per day
+            <span class="legend"><span><b style="background: var(--s1)"></b>Visitors</span><span><b style="background: var(--s2)"></b>Plays</span></span>
+          </h2>
+          <div id="daily"></div>
+          <details><summary>Data table</summary><div id="daily-table"></div></details>
+        </div>
+        <div class="card">
+          <h2>Minutes played per day</h2>
+          <div id="minutes"></div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card"><h2>Where they come from</h2><div class="bars" id="sources"></div></div>
+        <div class="card"><h2>Countries</h2><div class="bars" id="countries"></div></div>
+        <div class="card"><h2>Leaderboard</h2><div id="top"></div></div>
+        <div class="card"><h2>Devices</h2><div class="bars" id="devices"></div></div>
+        <div class="card"><h2>Systems</h2><div class="bars" id="os"></div></div>
+        <div class="card"><h2>Opened in</h2><div class="bars" id="apps"></div><h3 class="sub">Screen while playing</h3><div class="bars" id="orient"></div></div>
+        <div class="card"><h2>Top tricks</h2><div class="bars" id="tricks"></div></div>
+        <div class="card"><h2>Moments</h2><div class="bars" id="events"></div></div>
+        <div class="card"><h2>Tasks done</h2><div class="bars" id="tasks"></div></div>
+      </section>
+
+      <footer>Anonymous: no cookies, no stored IP addresses. Unique visitors are counted per day with a salted hash. All-time totals for the breakdowns; the charts follow the selected range.</footer>
+    </div>
+  </div>
+
+  <div id="tip"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => Math.round(n).toLocaleString('en-US');
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const DEMO = new URLSearchParams(location.search).has('demo');
+    let days = 30, timer = null;
+
+    const TASK_NAMES = {
+      wall: 'Climb the wall', wallPerfect: 'Perfect wall landing', kickflip: 'Kickflip the lineup', double: 'Double kickflip',
+      rings5: '5 rings', ringsAll: 'Every ring', rooftop: 'Rooftop landing', drift: '2,000 drift', speed: '300 km/h',
+      refuel: 'Air station refill', stars5: 'Five-star streak', launch: '0-100 under 1 s', flip: 'Front/back flip', hang: '6 s hang time', combo: 'x3 combo',
+    };
+    const EVENT_NAMES = { release: 'Wall climbs', launch: 'Kickflip launches', takeoff: 'Rocket take-offs', hop: 'Thruster hops', crash: 'Crashes', ring: 'Rings collected', refill: 'Air refills', fans: 'Wall entries' };
+    const regionName = (() => { try { const dn = new Intl.DisplayNames(['en'], { type: 'region' }); return (c) => (c === 'XX' ? 'Unknown' : dn.of(c) || c); } catch { return (c) => c; } })();
+    const flag = (c) => (/^[A-Z]{2}$/.test(c) && c !== 'XX' ? String.fromCodePoint(...[...c].map((ch) => 0x1f1a5 + ch.charCodeAt(0))) : '🏳️');
+    const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    // ---------- tooltip ----------
+    const tip = $('tip');
+    function showTip(html, x, y) {
+      tip.innerHTML = html;
+      tip.style.opacity = 1;
+      const r = tip.getBoundingClientRect();
+      tip.style.left = Math.min(innerWidth - r.width - 8, x + 14) + 'px';
+      tip.style.top = Math.max(8, y - r.height - 12) + 'px';
+    }
+    const hideTip = () => (tip.style.opacity = 0);
+
+    // ---------- data ----------
+    async function load() {
+      if (DEMO) return demoData(days);
+      const key = sessionStorage.getItem('rc-key');
+      const res = await fetch(`/api/stats?days=${days}`, { headers: { 'x-dashboard-key': key || '' } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { const e = new Error(body.error || `Error ${res.status}`); e.status = res.status; throw e; }
+      return body;
+    }
+
+    function demoData(n) {
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const daily = [];
+      for (let i = 0; i < n; i++) {
+        const t = Date.now() - (n - 1 - i) * 86400000;
+        const boost = i === n - 4 ? 6 : i > n - 4 ? 3.5 - (i - (n - 4)) * 0.6 : 1;
+        const visitors = Math.round((40 + rnd() * 60) * boost);
+        const plays = Math.round(visitors * (0.55 + rnd() * 0.2));
+        daily.push({ date: new Date(t).toISOString().slice(0, 10), visitors, players: Math.round(plays * 0.8), pageviews: Math.round(visitors * 1.3), plays, minutes: Math.round(plays * (3 + rnd() * 3)) });
+      }
+      const sum = (k) => daily.reduce((a, d) => a + d[k], 0);
+      return {
+        generated: Date.now(), live: 7, range: { days: n, visitors: Math.round(sum('visitors') * 0.85) },
+        daily, totals: { visitors: 3120, pageviews: 4400, plays: 2980, minutes: 13200 },
+        sources: { X: 1840, Direct: 620, Telegram: 410, Google: 90, 'reddit.com': 60 },
+        countries: { US: 820, RU: 640, GB: 230, DE: 190, UA: 150, BR: 120, IN: 95, FR: 80, XX: 20 },
+        devices: { phone: 2140, desktop: 880, tablet: 60 },
+        os: { iOS: 1320, Android: 820, Windows: 610, macOS: 270, Linux: 40 },
+        apps: { Browser: 1700, 'X app': 1210, 'Telegram app': 140, 'Other app': 30 },
+        orientation: { landscape: 1640, portrait: 1340 },
+        tricks: { kickflip: 2410, backflip: 1530, 'air time': 1490, 'wall climb': 1210, 'clean landing': 980, frontflip: 760, spin: 640, 'lineup cleared': 520, 'double kickflip': 310, 'perfect landing': 230, drift: 410, 'rooftop landing': 95 },
+        events: { hop: 6120, release: 1210, launch: 990, crash: 1730, takeoff: 640, ring: 2210, refill: 300 },
+        tasks: { wall: 1180, kickflip: 640, flip: 900, launch: 420, double: 180, hang: 610, combo: 230, rings5: 160, ringsAll: 12, rooftop: 140, speed: 520, stars5: 60 },
+        top: [48210, 41980, 39720, 33310, 29850, 27220, 25640, 22120, 20480, 19950].map((score, i) => ({ score, device: ['phone', 'desktop'][i % 2], country: ['US', 'RU', 'GB', 'DE', 'UA'][i % 5], date: daily[n - 1 - (i % 5)].date })),
+      };
+    }
+
+    // ---------- render ----------
+    function render(s) {
+      const live = $('live');
+      live.classList.toggle('zero', !s.live);
+      live.querySelector('span').textContent = `${fmt(s.live)} playing now`;
+      $('updated').textContent = 'Updated ' + new Date(s.generated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const d = s.daily, today = d[d.length - 1] || {};
+      const sum = (k) => d.reduce((a, x) => a + x[k], 0);
+      const plays = sum('plays'), minutes = sum('minutes'), players = sum('players');
+      const rate = s.range.visitors ? Math.min(100, (players / s.range.visitors) * 100) : 0;
+      const kpi = [
+        ['Visitors', fmt(s.range.visitors), `${fmt(today.visitors || 0)} today`],
+        ['Plays', fmt(plays), `${fmt(today.plays || 0)} today`],
+        ['Started playing', rate.toFixed(0) + '%', 'of visitors pressed Drive'],
+        ['Avg play time', players ? (minutes / players).toFixed(1) + ' min' : '0 min', 'per player'],
+        ['Time played', minutes >= 120 ? fmt(minutes / 60) + ' h' : fmt(minutes) + ' min', `last ${s.range.days} days`],
+        ['All-time visitors', fmt(s.totals.visitors), `${fmt(s.totals.plays)} plays in total`],
+      ];
+      $('kpis').innerHTML = kpi.map(([l, v, sub]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
+
+      lineChart($('daily'), d, [{ key: 'visitors', name: 'Visitors', color: 'var(--s1)' }, { key: 'plays', name: 'Plays', color: 'var(--s2)' }]);
+      columnChart($('minutes'), d, 'minutes', 'var(--s3)', 'min');
+      $('daily-table').innerHTML = `<table><tr><th>Date</th><th>Visitors</th><th>Plays</th><th>Minutes</th></tr>${d.slice().reverse().map((x) => `<tr><td>${x.date}</td><td>${fmt(x.visitors)}</td><td>${fmt(x.plays)}</td><td>${fmt(x.minutes)}</td></tr>`).join('')}</table>`;
+
+      bars($('sources'), s.sources, (k) => k);
+      bars($('countries'), s.countries, (k) => `${flag(k)} ${regionName(k)}`, 8);
+      bars($('devices'), s.devices, (k) => ({ phone: '📱 Phone', desktop: '💻 Desktop', tablet: '📟 Tablet' }[k] || k));
+      bars($('os'), s.os, (k) => k);
+      bars($('apps'), s.apps, (k) => k);
+      bars($('orient'), s.orientation, (k) => ({ portrait: '▯ Portrait', landscape: '▭ Landscape' }[k] || k));
+      bars($('tricks'), s.tricks, cap, 8);
+      bars($('events'), s.events, (k) => EVENT_NAMES[k] || cap(k), 8);
+      bars($('tasks'), s.tasks, (k) => TASK_NAMES[k] || k, 8);
+
+      $('top').innerHTML = s.top.length
+        ? `<table><tr><th>#</th><th>Score</th><th></th><th>Day</th></tr>${s.top.slice(0, 10).map((t, i) => `<tr class="${i === 0 ? 'gold' : ''}"><td class="rank">${i + 1}</td><td class="score">${fmt(t.score)}</td><td>${t.device === 'phone' ? '📱' : t.device === 'tablet' ? '📟' : '💻'} ${flag(t.country)}</td><td>${esc(t.date || '')}</td></tr>`).join('')}</table>`
+        : '<div class="empty">No scores yet.</div>';
+    }
+
+    // Ranked horizontal bars, one hue; the share of the total sits next to the value.
+    function bars(el, data, label, limit = 6) {
+      let rows = Object.entries(data || {}).filter(([, v]) => v > 0);
+      rows.sort((a, b) => b[1] - a[1]);
+      if (!rows.length) { el.innerHTML = '<div class="empty">No data yet.</div>'; return; }
+      if (rows.length > limit) {
+        const rest = rows.slice(limit - 1).reduce((a, [, v]) => a + v, 0);
+        rows = [...rows.slice(0, limit - 1), ['Other', rest]];
+      }
+      const max = Math.max(...rows.map(([, v]) => v));
+      const total = rows.reduce((a, [, v]) => a + v, 0);
+      el.innerHTML = rows.map(([k, v]) => {
+        const name = k === 'Other' ? 'Other' : label(k);
+        const pct = total ? Math.round((v / total) * 100) : 0;
+        return `<div class="bar" data-tip="${esc(name)}|${fmt(v)}|${pct}"><span class="name">${esc(name)}</span><span class="track"><span class="fill" style="width:${(v / max) * 100}%;display:block"></span></span><span class="val">${fmt(v)}<small>${pct}%</small></span></div>`;
+      }).join('');
+      el.querySelectorAll('.bar').forEach((b) => {
+        b.addEventListener('mousemove', (e) => { const [n, v, p] = b.dataset.tip.split('|'); showTip(`<b>${n}</b><br>${v} · ${p}% of total`, e.clientX, e.clientY); });
+        b.addEventListener('mouseleave', hideTip);
+      });
+    }
+
+    const niceMax = (v) => { if (v <= 5) return 5; const p = 10 ** Math.floor(Math.log10(v)); const m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; };
+    const shortDate = (s) => { const d = new Date(s + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); };
+
+    // Two-series line chart on one axis, with a crosshair tooltip and end labels.
+    function lineChart(el, data, series) {
+      const W = 760, H = 260, L = 40, R = 70, T = 12, B = 26;
+      const max = niceMax(Math.max(1, ...data.flatMap((d) => series.map((s) => d[s.key]))));
+      const x = (i) => L + (data.length === 1 ? (W - L - R) / 2 : (i / (data.length - 1)) * (W - L - R));
+      const y = (v) => T + (1 - v / max) * (H - T - B);
+      let svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Visitors and plays per day">`;
+      for (let k = 0; k <= 4; k++) { const v = (max / 4) * k; svg += `<line class="gridline" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`; }
+      const step = Math.max(1, Math.ceil(data.length / 7));
+      data.forEach((d, i) => { if (i % step === 0 || i === data.length - 1) svg += `<text class="axis" x="${x(i)}" y="${H - 6}" text-anchor="middle">${shortDate(d.date)}</text>`; });
+      for (const s of series) {
+        const pts = data.map((d, i) => `${x(i).toFixed(1)},${y(d[s.key]).toFixed(1)}`).join(' ');
+        svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      }
+      // End labels, nudged apart if they collide.
+      const ends = series.map((s) => ({ s, yy: y(data[data.length - 1][s.key]) })).sort((a, b) => a.yy - b.yy);
+      for (let k = 1; k < ends.length; k++) if (ends[k].yy - ends[k - 1].yy < 14) ends[k].yy = ends[k - 1].yy + 14;
+      for (const e of ends) svg += `<text class="endlabel" x="${W - R + 8}" y="${e.yy + 4}">${e.s.name}</text>`;
+      svg += `<line id="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="rgba(255,255,255,0.35)" stroke-width="1" visibility="hidden"/>`;
+      for (const s of series) svg += `<circle class="dot" data-k="${s.key}" r="5" fill="${s.color}" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+      svg += `<rect class="hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}"/></svg>`;
+      el.innerHTML = svg;
+      const root = el.querySelector('svg'), xh = root.querySelector('#xh'), hit = root.querySelector('.hit');
+      hit.addEventListener('mousemove', (e) => {
+        const r = root.getBoundingClientRect();
+        const px = ((e.clientX - r.left) / r.width) * W;
+        const i = Math.max(0, Math.min(data.length - 1, Math.round(((px - L) / (W - L - R)) * (data.length - 1))));
+        xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.setAttribute('visibility', 'visible');
+        root.querySelectorAll('.dot').forEach((c) => { c.setAttribute('cx', x(i)); c.setAttribute('cy', y(data[i][c.dataset.k])); c.setAttribute('visibility', 'visible'); });
+        showTip(`<b>${shortDate(data[i].date)}</b><br>${series.map((s) => `<span class="k" style="background:${s.color}"></span>${s.name}: <b>${fmt(data[i][s.key])}</b>`).join('<br>')}`, e.clientX, e.clientY);
+      });
+      hit.addEventListener('mouseleave', () => { hideTip(); xh.setAttribute('visibility', 'hidden'); root.querySelectorAll('.dot').forEach((c) => c.setAttribute('visibility', 'hidden')); });
+    }
+
+    // Single-series columns with a hover tooltip; bars sit on the baseline, rounded on top.
+    function columnChart(el, data, key, color, unit) {
+      const W = 380, H = 260, L = 34, R = 6, T = 12, B = 26;
+      const max = niceMax(Math.max(1, ...data.map((d) => d[key])));
+      const bw = (W - L - R) / data.length;
+      const y = (v) => T + (1 - v / max) * (H - T - B);
+      let svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Minutes played per day">`;
+      for (let k = 0; k <= 4; k++) { const v = (max / 4) * k; svg += `<line class="gridline" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`; }
+      data.forEach((d, i) => {
+        const h = (H - T - B) - (y(d[key]) - T), x0 = L + i * bw + 1, w = Math.max(1, bw - 2), r = Math.min(4, w / 2, h);
+        const yb = H - B, yt = yb - h;
+        if (h > 0) svg += `<path d="M${x0},${yb} V${yt + r} Q${x0},${yt} ${x0 + r},${yt} H${x0 + w - r} Q${x0 + w},${yt} ${x0 + w},${yt + r} V${yb} Z" fill="${color}"/>`;
+        svg += `<rect class="hit" data-i="${i}" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}"/>`;
+      });
+      const step = Math.max(1, Math.ceil(data.length / 4));
+      data.forEach((d, i) => { if (i % step === 0) svg += `<text class="axis" x="${L + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${shortDate(d.date)}</text>`; });
+      el.innerHTML = svg + '</svg>';
+      el.querySelectorAll('.hit').forEach((h) => {
+        h.addEventListener('mousemove', (e) => { const d = data[h.dataset.i]; showTip(`<b>${shortDate(d.date)}</b><br><span class="k" style="background:${color}"></span>${fmt(d[key])} ${unit} played`, e.clientX, e.clientY); });
+        h.addEventListener('mouseleave', hideTip);
+      });
+    }
+
+    // ---------- flow ----------
+    async function refresh() {
+      try {
+        const s = await load();
+        $('login').classList.add('hidden');
+        $('app').classList.remove('hidden');
+        render(s);
+      } catch (e) {
+        clearInterval(timer);
+        $('app').classList.add('hidden');
+        $('login').classList.remove('hidden');
+        $('err').textContent = e.status === 401 && sessionStorage.getItem('rc-key') ? 'Wrong password' : e.status === 401 ? '' : e.message;
+        if (e.status === 503) {
+          $('setup').classList.remove('hidden');
+          $('setup').innerHTML = 'Finish the setup in Vercel → project <b>roadster-city</b>:<br>1. <b>Storage</b> → connect <b>Upstash for Redis</b> (free).<br>2. <b>Settings → Environment Variables</b> → add <code>DASHBOARD_PASSWORD</code>.<br>3. Redeploy.';
+        }
+        if (e.status === 401) sessionStorage.removeItem('rc-key');
+      }
+    }
+    function start() {
+      clearInterval(timer);
+      refresh();
+      timer = setInterval(refresh, 30000);
+    }
+
+    $('login').querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      sessionStorage.setItem('rc-key', $('pw').value);
+      $('pw').value = '';
+      start();
+    });
+    $('range').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      days = Number(b.dataset.d);
+      $('range').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+      refresh();
+    });
+    $('refresh').addEventListener('click', refresh);
+    $('out').addEventListener('click', () => { sessionStorage.removeItem('rc-key'); location.href = location.pathname; });
+
+    if (DEMO) $('demo').classList.remove('hidden');
+    if (DEMO || sessionStorage.getItem('rc-key')) start();
+    else $('login').classList.remove('hidden');
+  </script>
+</body>
+</html>

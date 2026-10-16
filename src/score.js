@@ -73,7 +73,7 @@ export class Score {
     item.firstChild.textContent = name;
     this.feed(item, 2.2);
     this.renderCombo();
-    this.onTrick?.(this.tricks.length);
+    this.onTrick?.(name);
   }
 
   // Landed on the wheels: pay the combo (times the streak stars).
@@ -201,6 +201,7 @@ export class Score {
       this.driftIdle += dt;
       if (this.driftIdle > 0.6) {
         const pts = Math.round(this.drift / 10) * 10;
+        if (pts >= 100) this.onTrick?.('drift');
         if (pts >= 300) this.stunt(pts, 'Drift');
         else if (pts >= 100) this.add(pts, 'Drift');
         if (pts >= 2000) this.task('drift');

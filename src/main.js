@@ -25,6 +25,7 @@ import { buildPedestrians } from './pedestrians.js';
 import { Menu } from './menu.js';
 import { loadModels, rigWheels } from './models.js';
 import { X_HANDLE } from './config.js';
+import { createTelemetry } from './telemetry.js';
 
 // ?touch forces the phone layout (handy for testing on a desktop).
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
@@ -74,7 +75,12 @@ const hud = new Hud(world);
 const neon = buildNeon(scene, world.buildings, quality);
 const rings = buildRings(scene, world);
 const score = new Score();
-score.onTask = (t) => { audio.chime(5); hud.bigBanner('TASK COMPLETE', t.title, `+${t.bonus.toLocaleString('en-US')}`); };
+score.onTask = (t) => { telemetry.task(t.id); audio.chime(5); hud.bigBanner('TASK COMPLETE', t.title, `+${t.bonus.toLocaleString('en-US')}`); };
+// Anonymous stats for the dashboard (see src/telemetry.js).
+const telemetry = createTelemetry();
+telemetry.visit();
+score.onTrick = (name) => telemetry.trick(name);
+const COUNTED_EVENTS = new Set(['crash', 'hop', 'launch', 'release', 'takeoff', 'refill', 'fans']);
 hud.setRings(rings);
 const traffic = buildTraffic(scene, world, quality, models);
 const details = buildDetails(scene, world, quality, Math.random);
@@ -252,6 +258,7 @@ function launchTimer(dt, ctl) {
 
 function handleEvents() {
   for (const e of vehicle.events) {
+    if (COUNTED_EVENTS.has(e.type)) telemetry.event(e.type);
     scoreEvent(e);
     if (e.type === 'fans') hud.banner('Fans · max grip', '', 1.6);
     else if (e.type === 'release') hud.banner('Release', `Hold ${LIFT_KEY} — thrusters`, 1.8);
@@ -366,6 +373,7 @@ playBtn.disabled = false;
 playBtn.textContent = 'Drive';
 let playing = false;
 playBtn.addEventListener('click', () => {
+  telemetry.play();
   document.getElementById('start').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   document.body.classList.add('playing');
@@ -441,11 +449,14 @@ function tick(realDt, ctl) {
     lastPos.copy(vehicle.pos);
     for (const r of rings.update(dt, vehicle.pos, time)) {
       score.stunt(250, `Ring ${rings.collected}/${rings.total}`);
+      telemetry.event('ring');
       audio.chime(rings.collected % 5);
       score.task('rings5');
       score.task('ringsAll');
     }
     score.update(realDt, vehicle);
+    telemetry.score(score.points);
+    telemetry.tick(realDt, !menu.open);
     launchTimer(dt, ctl);
     condition = Math.min(1, Math.max(0, condition) + dt * 0.04);
     // A battered car smokes from under the hood.
@@ -457,7 +468,7 @@ function tick(realDt, ctl) {
     const onRoof = vehicle.state === 'ground' && vehicle.pos.y > 1;
     if (onRoof && !wasOnRoof) {
       const key = Math.round(vehicle.pos.y * 10);
-      if (!roofsVisited.has(key)) { roofsVisited.add(key); score.stunt(500, 'Rooftop landing'); score.task('rooftop'); }
+      if (!roofsVisited.has(key)) { roofsVisited.add(key); score.stunt(500, 'Rooftop landing'); score.task('rooftop'); telemetry.trick('rooftop landing'); }
     }
     wasOnRoof = onRoof;
   }
