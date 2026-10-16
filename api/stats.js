@@ -5,9 +5,11 @@ const crypto = require('crypto');
 const { configured, pipeline, hash, day } = require('./_redis');
 
 function allowed(given) {
-  const want = process.env.DASHBOARD_PASSWORD || '';
+  // Stray spaces or a newline from copy-paste don't count.
+  const want = (process.env.DASHBOARD_PASSWORD || '').trim();
+  given = String(given || '').trim();
   if (!want || !given) return false;
-  const a = crypto.createHash('sha256').update(String(given)).digest();
+  const a = crypto.createHash('sha256').update(given).digest();
   const b = crypto.createHash('sha256').update(want).digest();
   return crypto.timingSafeEqual(a, b);
 }
