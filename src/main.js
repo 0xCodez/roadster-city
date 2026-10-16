@@ -29,6 +29,11 @@ import { X_HANDLE } from './config.js';
 // ?touch forces the phone layout (handy for testing on a desktop).
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
 if (isTouch) document.body.classList.add('touch');
+// Inside X's (or another app's) built-in browser: suggest opening the real browser,
+// where the game can go full screen and rotate.
+if (/Twitter|FBAN|FBAV|Instagram|Telegram|LinkedInApp|; wv\)/i.test(navigator.userAgent)) {
+  document.getElementById('inapp-hint')?.classList.remove('hidden');
+}
 
 // Quality: remembered per device, defaults to low on phones.
 let quality = 'high';

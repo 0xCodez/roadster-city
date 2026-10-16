@@ -50,13 +50,16 @@ export class CameraRig {
     if (stunting) this.stuntKind = vehicle.stunt;
     this.stuntTimer = stunting ? STUNT_HOLD : Math.max(0, this.stuntTimer - dt);
 
+    // Portrait screens are narrow: open the view up and pull back a little so the road
+    // ahead and the car both fit. 0 on landscape, 1 on a tall phone held upright.
+    const tall = THREE.MathUtils.clamp((1 - cam.aspect) / 0.55, 0, 1);
     const wasChasing = this.chasing;
     this.chasing = false;
     if (this.mode === 'cockpit') {
       car.cockpit.getWorldPosition(cam.position);
       car.cockpit.getWorldQuaternion(this._q);
       cam.quaternion.copy(this._q).multiply(this._flip);
-      cam.fov += (74 + spd * 0.06 - cam.fov) * (1 - Math.exp(-dt * 3));
+      cam.fov += (74 + 16 * tall + spd * 0.06 - cam.fov) * (1 - Math.exp(-dt * 3));
     } else if (this.stuntTimer > 0 && this.stuntKind === 'kickflip' && this.world.kickflip) {
       // Low side shot across the row, tracking the car like the reveal broadcast.
       const k = this.world.kickflip.row;
@@ -99,9 +102,9 @@ export class CameraRig {
       this.air += ((airborne ? 1 : 0) - this.air) * (1 - Math.exp(-dt * 2));
       const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
       const C = this.chase;
-      const dist = C.dist + Math.min(spd, 100) * C.distPerMs + this.air * C.airDist;
+      const dist = C.dist + 2.2 * tall + Math.min(spd, 100) * C.distPerMs + this.air * C.airDist;
       const target = vehicle.pos.clone().addScaledVector(fwd, -dist);
-      target.y += 2.3 + Math.min(spd, 100) * 0.004 + this.air * C.airHeight;
+      target.y += 2.3 + 1.3 * tall + Math.min(spd, 100) * 0.004 + this.air * C.airHeight;
       const lookAt = vehicle.pos.clone().addScaledVector(fwd, 3);
       lookAt.y += 0.9;
       if (this.first) { this.pos.copy(target); this.look.copy(lookAt); }
@@ -119,7 +122,7 @@ export class CameraRig {
       cam.position.copy(this.pos);
       cam.lookAt(this.look);
       this.chasing = true;
-      cam.fov += (C.fov + Math.min(spd, 100) * C.fovPerMs + (vehicle.rearThrust > 0.5 ? C.boostFov : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
+      cam.fov += (C.fov + 18 * tall + Math.min(spd, 100) * C.fovPerMs + (vehicle.rearThrust > 0.5 ? C.boostFov : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
     }
     if (this.shake > 0.001) {
       cam.position.x += (Math.random() - 0.5) * this.shake;
