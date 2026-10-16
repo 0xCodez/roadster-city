@@ -11,11 +11,15 @@ import { DIM } from './car.js';
 //  fly     — Rocket mode: hover and fly on the thrusters until the air runs out
 //  crashed — landed on the roof or side: tumble, then the thrusters right the car
 
+// No hard top speed: full acceleration up to where the motor runs out of power
+// (accel = power / speed), and air drag sets the top end. Without boost: Road
+// ~110 m/s (400 km/h), Track ~140 m/s (500 km/h), Rocket ~160 m/s (580 km/h).
 const MODES = {
-  road: { accel: 15, top: 86, grip: 7.5, steer: 0.55, brake: 30 },
-  track: { accel: 18, top: 102, grip: 10.5, steer: 0.6, brake: 36 },
-  rocket: { accel: 26, top: 103, grip: 11, steer: 0.6, brake: 38 }, // rear thrusters help: 0-100 in ~1 s
+  road: { accel: 15, power: 480, grip: 7.5, steer: 0.55, brake: 30 },
+  track: { accel: 18, power: 950, grip: 10.5, steer: 0.6, brake: 36 },
+  rocket: { accel: 26, power: 1400, grip: 11, steer: 0.6, brake: 38 }, // rear thrusters help: 0-100 in ~1 s
 };
+const MAX_STEP_DIST = 0.6; // m per physics step; faster cars get extra sub-steps so they can't skip through walls
 
 // Rocket-mode flight.
 const FLY_ACCEL = 16; // m/s², rear thrusters
@@ -42,10 +46,12 @@ const AIR_MAX = 5500; // psi
 const AIR_USE = 1400; // psi per second at full thrust
 const AIR_REFILL = 900; // psi per second on the ground (onboard compressor), not while boosting
 const KICK_MIN_SPEED = 16.7; // m/s (60 km/h) needed on the launch line
-const KICK_MAX_SPEED = 30; // m/s, thrusters trim anything faster so you land on the pad
-const KICK_VY = 10.5; // m/s upward at the end of the boost: ~7 m apex, as at the reveal
+const KICK_VY = 10.5; // m/s upward at ~80 km/h: the ~7 m hop from the reveal
+const KICK_REF_SPEED = 22; // m/s (80 km/h): faster than this throws you higher and further
+const KICK_VY_PER_MS = 0.3; // extra upward speed per m/s above it
+const KICK_VY_MAX = 24; // m/s: a ~30 m apex at 240+ km/h
+const KICK_SPIN = 4.2; // rad/s of assisted roll the jump allows for (sets the number of auto flips)
 const KICK_BOOST_T = 0.3; // s of full thrust at launch
-const KICK_ROLL_RATE = 3.4; // rad/s, the assisted roll: one full turn in a normal jump
 
 // Thrusters in every mode.
 const HOP_VY = 8.2; // m/s, tap lift on the ground: a ~3.4 m hop
@@ -53,7 +59,6 @@ const HOP_AIR = 330; // psi per hop
 const LIFT_VY = 2.5; // m/s, holding lift in the air climbs gently (it brakes any fall first)
 const BOOST_BASE = 6.5; // m/s², rear thrust at speed
 const BOOST_LAUNCH = 19.5; // extra m/s² from a standstill, gone by 40 m/s: 0-100 km/h in under 1 s
-const BOOST_TOP = 105; // m/s, rear thrust stops adding speed here (~380 km/h)
 const BOOST_USE = 825; // psi/s
 const AIR_BOOST = 9; // m/s², rear thrust in the air
 const RCS_USE = 165; // psi/s while steering in the air
@@ -116,6 +121,10 @@ export class Vehicle {
     this.stunt = null; // 'wall' | 'kickflip' while a stunt is in progress
     this.boost = 0;
     this.rollDir = 1;
+    this.kickVy = KICK_VY;
+    this.kickTurns = 1;
+    this.kickRate = 3.4;
+    this.kickGoal = TAU;
     this.angVel = new THREE.Vector3(); // car space: x pitch, y yaw, z roll
     this.rot = { roll: 0, pitch: 0, yaw: 0 }; // turns made in this jump, for trick callouts
     this.tricksCalled = { roll: 0, pitch: 0, yaw: 0 };
@@ -145,6 +154,12 @@ export class Vehicle {
   get gForce() { return Math.hypot(this.accelLong, this.accelLat) / G; }
 
   step(dt, input) {
+    const n = Math.min(8, Math.ceil((this.speed * dt) / MAX_STEP_DIST));
+    if (n > 1) { for (let i = 0; i < n; i++) this.stepOnce(dt / n, input); return; }
+    this.stepOnce(dt, input);
+  }
+
+  stepOnce(dt, input) {
     if (this.state === 'ramp') this.stepRamp(dt, input);
     else if (this.state === 'air') this.stepAir(dt, input);
     else if (this.state === 'fly') this.stepFly(dt, input);
@@ -164,6 +179,7 @@ export class Vehicle {
     this.angVel.set(0, this.yawRate * 0.8, 0); // a spinning car keeps spinning
     this.lastInputT = 0;
     this.thrust = 0;
+    this.apexDone = false; // slow-mo once per jump, even if lift makes the car rise again
   }
 
   // ---------------- ground ----------------
@@ -192,7 +208,7 @@ export class Vehicle {
     } else {
       if (input.throttle > 0) {
         if (vF < -0.5) { a += P.brake * input.throttle; this.braking = true; }
-        else a += P.accel * (this.world.wet ? 0.85 : 1) * input.throttle * Math.max(0, 1 - (vF / P.top) ** 2);
+        else a += Math.min(P.accel, P.power / Math.max(1, vF)) * (this.world.wet ? 0.85 : 1) * input.throttle;
       }
       if (input.brake > 0) {
         if (vF > 0.5) { a -= P.brake * input.brake; this.braking = true; }
@@ -200,7 +216,7 @@ export class Vehicle {
       }
       // Rear thrusters: brutal off the line, still a push at speed.
       if (input.boost && this.air > 50 && vF > -1) {
-        a += (BOOST_BASE + BOOST_LAUNCH * Math.max(0, 1 - Math.abs(vF) / 40)) * THREE.MathUtils.clamp((BOOST_TOP - vF) / 10, 0, 1);
+        a += BOOST_BASE + BOOST_LAUNCH * Math.max(0, 1 - Math.abs(vF) / 40);
         this.air = Math.max(0, this.air - BOOST_USE * dt);
         this.boosting = true;
       }
@@ -248,7 +264,7 @@ export class Vehicle {
     this.wheelSpeed = burn ? 40 * this.burnout : vF;
     this.drift = spd > 4 ? THREE.MathUtils.radToDeg(Math.atan2(Math.abs(vR), spd)) : 0;
     this.thrust = 0;
-    this.rearThrust = this.boosting ? 1 : rocket && input.throttle && vF > 0 && vF < P.top ? input.throttle : 0;
+    this.rearThrust = this.boosting ? 1 : rocket && input.throttle && vF > 0 ? input.throttle : 0;
     this.pitchDeg = 0;
     this.downforce = this.mode === 'road' ? 0.5 * vF * vF : MASS * 0.35 + 0.9 * vF * vF;
     if (!this.boosting) this.refill(dt);
@@ -373,14 +389,20 @@ export class Vehicle {
       const headingOk = Math.sin(this.yaw) * L.dir > Math.cos(THREE.MathUtils.degToRad(35));
       if (along <= 0 || !headingOk) return;
       if (along < KICK_MIN_SPEED) { this.events.push({ type: 'nolaunch' }); return; }
+      // The faster you hit the line, the higher and further the thrusters throw you,
+      // and the more turns the assisted roll makes on its own.
       const h = Math.hypot(this.vel.x, this.vel.z);
-      if (h > KICK_MAX_SPEED) this.vel.multiplyScalar(KICK_MAX_SPEED / h);
+      this.kickVy = THREE.MathUtils.clamp(KICK_VY + (h - KICK_REF_SPEED) * KICK_VY_PER_MS, KICK_VY, KICK_VY_MAX);
+      const airT = (2 * this.kickVy) / G;
+      this.kickTurns = Math.max(1, Math.floor((airT * KICK_SPIN) / TAU));
+      this.kickRate = THREE.MathUtils.clamp((this.kickTurns * TAU) / (airT * 0.7), 3.4, 9); // done with 30% of the air time to spare
+      this.kickGoal = this.kickTurns * TAU;
       this.yawRate = 0;
       this.enterAir();
       this.stunt = 'kickflip';
       this.boost = KICK_BOOST_T;
       this.rollDir = 1;
-      this.events.push({ type: 'launch' });
+      this.events.push({ type: 'launch', turns: this.kickTurns, speed: h });
       return;
     }
   }
@@ -482,7 +504,7 @@ export class Vehicle {
       // Kickflip launch: a short full-power burst straight up.
       this.boost -= dt;
       this.thrust = this.boost > 0 ? 1 : 0; // cut cleanly so the apex stays ~7 m
-      acc.y += KICK_VY / KICK_BOOST_T + G;
+      acc.y += this.kickVy / KICK_BOOST_T + G;
       this.air = Math.max(0, this.air - AIR_USE * dt);
     } else if (this.thrust > 0.01) {
       acc.addScaledVector(up, THRUST_G * G * this.thrust);
@@ -497,7 +519,7 @@ export class Vehicle {
     }
     const vyBefore = this.vel.y;
     this.vel.addScaledVector(acc, dt);
-    if (this.stunt === 'kickflip' && vyBefore > 0 && this.vel.y <= 0) this.events.push({ type: 'apex' });
+    if (this.stunt === 'kickflip' && !this.apexDone && vyBefore > 0 && this.vel.y <= 0) { this.apexDone = true; this.events.push({ type: 'apex' }); }
     // Light air drag. The wall stunt keeps its stronger braking so you come down near
     // the run-up, and braking thrust bleeds some horizontal speed.
     const wall = this.stunt === 'wall', kick = this.stunt === 'kickflip';
@@ -535,12 +557,16 @@ export class Vehicle {
     );
     let active = target.lengthSq() > 1e-4;
     if (active) this.air = Math.max(0, this.air - RCS_USE * dt);
-    if (this.stunt === 'kickflip' && Math.abs(input.steer) < 0.05) {
-      // Assisted roll: complete the current turn.
+    if (this.stunt === 'kickflip' && Math.abs(input.steer) >= 0.05) {
+      // Rolling by hand: when you let go, the assist finishes the turn you're in.
+      this.kickGoal = Math.max(this.kickGoal, Math.ceil(Math.abs(this.rot.roll) / TAU) * TAU);
+    } else if (this.stunt === 'kickflip') {
+      // Assisted roll: the turns set at launch (or the one you rolled into), never one
+      // more because of a little overshoot at the end of a turn.
       const r = Math.abs(this.rot.roll);
-      const left = Math.max(1, Math.ceil((r - 0.6) / TAU)) * TAU - r;
+      const left = this.kickGoal - r;
       if (left > 0.03) {
-        target.z = (Math.sign(this.rot.roll) || this.rollDir) * Math.min(KICK_ROLL_RATE, 0.6 + left * 5);
+        target.z = (Math.sign(this.rot.roll) || this.rollDir) * Math.min(this.kickRate, 0.6 + left * 5);
         active = true;
       }
     }

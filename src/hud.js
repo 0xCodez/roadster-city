@@ -5,7 +5,7 @@ import { LAYOUT } from './world.js';
 // right), stunt banners, a gold "task complete" banner and the radio name.
 
 const RADAR_SCALE = 0.9; // radar pixels per metre
-const MAX_KMH = 360;
+const MAX_KMH = 480; // no top speed any more; the dial reads to 480 and the number keeps going
 
 export class Hud {
   constructor(world) {

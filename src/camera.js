@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 
 // Chase camera that trails the direction of travel, a cockpit camera locked
-// to the driver's head, and a broadcast-style side camera for the wall stunt.
+// to the driver's head, a broadcast-style side camera for the wall stunt and a
+// close orbiting flip camera for the kickflip launch.
 
 const STUNT_HOLD = 1.6; // seconds to keep the stunt camera after landing
+const FLIP_HOLD = 0.7; // the flip camera hands back sooner: you land at speed
 
 // How the chase camera reacts to speed. Phones in landscape are very wide, so the
 // same field of view makes the car look tiny there: they get a gentler zoom-out.
@@ -25,6 +27,15 @@ export class CameraRig {
     this.first = true;
     this.stuntTimer = 0;
     this.air = 0; // 0..1, eases the chase camera back while airborne
+    this.flipT = 0; // time into the current kickflip
+    this.flipping = false;
+    this.wasFlipping = false;
+    this.flipClose = 0; // 0..1, how far the flip camera has swung in
+    this.flipDir = new THREE.Vector3(1, 0, 0);
+    this.flipYaw = 0;
+    this.flipOff = new THREE.Vector3();
+    this.flipLook = new THREE.Vector3();
+    this._side = new THREE.Vector3();
     this.followOff = new THREE.Vector3(); // chase camera offset from the car
     this.lookOff = new THREE.Vector3();
     this.chasing = false;
@@ -48,31 +59,62 @@ export class CameraRig {
 
     const stunting = vehicle.state !== 'ground' && vehicle.stunt;
     if (stunting) this.stuntKind = vehicle.stunt;
-    this.stuntTimer = stunting ? STUNT_HOLD : Math.max(0, this.stuntTimer - dt);
+    const hold = this.stuntKind === 'kickflip' ? FLIP_HOLD : STUNT_HOLD;
+    this.stuntTimer = stunting ? hold : Math.max(0, this.stuntTimer - dt);
+    if (stunting && vehicle.stunt === 'kickflip' && !this.flipping) this.flipT = 0;
+    this.flipping = stunting && vehicle.stunt === 'kickflip';
 
     // Portrait screens are narrow: open the view up and pull back a little so the road
     // ahead and the car both fit. 0 on landscape, 1 on a tall phone held upright.
     const tall = THREE.MathUtils.clamp((1 - cam.aspect) / 0.55, 0, 1);
     const wasChasing = this.chasing;
+    let flipCam = false;
     this.chasing = false;
     if (this.mode === 'cockpit') {
       car.cockpit.getWorldPosition(cam.position);
       car.cockpit.getWorldQuaternion(this._q);
       cam.quaternion.copy(this._q).multiply(this._flip);
       cam.fov += (74 + 16 * tall + spd * 0.06 - cam.fov) * (1 - Math.exp(-dt * 3));
-    } else if (this.stuntTimer > 0 && this.stuntKind === 'kickflip' && this.world.kickflip) {
-      // Low side shot across the row, tracking the car like the reveal broadcast.
-      const k = this.world.kickflip.row;
-      const x = THREE.MathUtils.clamp(vehicle.pos.x, k.x - 45, k.x + 45);
-      const target = new THREE.Vector3(x - Math.sign(vehicle.vel.x || 1) * 6, 4.5, k.z + 24);
-      const lookAt = vehicle.pos.clone();
-      lookAt.y = Math.max(lookAt.y, 1.5);
-      this.pos.lerp(target, 1 - Math.exp(-dt * 3));
-      this.look.lerp(lookAt, 1 - Math.exp(-dt * 10));
+    } else if (this.stuntTimer > 0 && this.stuntKind === 'kickflip') {
+      // Flip camera: swings in close beside the car, circles it slowly and zooms
+      // in while it rolls, then backs off for the landing. Offsets are relative
+      // to the car, so it keeps up at any speed.
+      this.flipT += dt;
+      const air = vehicle.state === 'air';
+      const hv = Math.hypot(vehicle.vel.x, vehicle.vel.z);
+      // Turn with the car's direction of travel smoothly, so a sharp change (a bounce)
+      // swings the camera round the car instead of straight through it.
+      if (this.first || !this.wasFlipping) this.flipYaw = hv > 2 ? Math.atan2(vehicle.vel.x, vehicle.vel.z) : vehicle.yaw;
+      if (hv > 2) {
+        let dy = Math.atan2(vehicle.vel.x, vehicle.vel.z) - this.flipYaw;
+        dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        this.flipYaw += dy * (1 - Math.exp(-dt * 2.5));
+      }
+      const dir = this.flipDir.set(Math.sin(this.flipYaw), 0, Math.cos(this.flipYaw)), side = this._side.set(dir.z, 0, -dir.x);
+      const k = THREE.MathUtils.smoothstep(this.flipT, 0.05, 0.6) * (air ? 1 : 0);
+      this.flipClose += (k - this.flipClose) * (1 - Math.exp(-dt * 4));
+      const c = this.flipClose;
+      const ang = -1.1 + Math.min(this.flipT, 4) * 0.5; // from behind-left round to the side
+      const dist = 9 - 3 * c + 2 * tall; // ~6 m at the closest: the whole car stays in frame
+      const off = dir.clone().multiplyScalar(-Math.cos(ang) * dist).addScaledVector(side, Math.sin(ang) * dist);
+      off.y = 2.4 - 1.2 * c;
+      const groundH = this.world.groundHeight(vehicle.pos.x, vehicle.pos.z);
+      off.y = Math.max(off.y, groundH + 1 - vehicle.pos.y);
+      // Aim at the body's centre: the car rolls about its floor point, so the body swings round it.
+      const lookOff = new THREE.Vector3(0, 0.55, 0).applyQuaternion(vehicle.quat);
+      if (!this.wasFlipping) {
+        this.flipOff.copy(this.pos).sub(vehicle.pos);
+        this.flipLook.copy(this.look).sub(vehicle.pos);
+      }
+      this.flipOff.lerp(off, 1 - Math.exp(-dt * 5));
+      this.flipLook.lerp(lookOff, 1 - Math.exp(-dt * 10));
+      this.pos.copy(vehicle.pos).add(this.flipOff);
+      this.look.copy(vehicle.pos).add(this.flipLook);
       cam.position.copy(this.pos);
       cam.lookAt(this.look);
-      cam.fov += (55 - cam.fov) * (1 - Math.exp(-dt * 2));
-      this.yaw = vehicle.yaw;
+      cam.fov += (60 - 14 * c + 18 * tall - cam.fov) * (1 - Math.exp(-dt * 3)); // zoom in during the flips
+      this.yaw = Math.atan2(dir.x, dir.z);
+      flipCam = true;
     } else if (this.stuntTimer > 0 && this.world.ramp) {
       // Side-on view of the whole wall, like the reveal broadcast.
       // Dolly along with the car as it flies back over the run-up.
@@ -124,6 +166,7 @@ export class CameraRig {
       this.chasing = true;
       cam.fov += (C.fov + 18 * tall + Math.min(spd, 100) * C.fovPerMs + (vehicle.rearThrust > 0.5 ? C.boostFov : 0) - cam.fov) * (1 - Math.exp(-dt * 3));
     }
+    this.wasFlipping = flipCam;
     if (this.shake > 0.001) {
       cam.position.x += (Math.random() - 0.5) * this.shake;
       cam.position.y += (Math.random() - 0.5) * this.shake;

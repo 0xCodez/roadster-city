@@ -211,7 +211,7 @@ function trickOf(e) {
 
 function scoreEvent(e) {
   if (e.type === 'release') { score.callTrick('WALL CLIMB', 500); score.task('wall'); score.requestSlowmo(1.1, 0.35); }
-  else if (e.type === 'apex') score.requestSlowmo(1.0, 0.4);
+  else if (e.type === 'apex') score.requestSlowmo(0.9 + 0.45 * vehicle.kickTurns, 0.33); // longer jumps, longer slow-mo
   else if (e.type === 'refill') score.task('refuel');
   else if (e.type === 'trick') score.callTrick(...trickOf(e));
   else if (e.type === 'land') {
@@ -482,6 +482,7 @@ function tick(realDt, ctl) {
   smoke.update(dt, vehicle, car);
   audio.update(vehicle, ctl);
   if (playing) hud.update(realDt, vehicle, { condition, combo: score.streakFrac });
+  document.body.classList.toggle('cine', score.timeScale < 1); // letterbox bars during slow-mo
 
   shadowTarget.copy(vehicle.pos);
   world.followShadow(shadowTarget);

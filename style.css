@@ -429,3 +429,14 @@ body.touch .menu-foot .esc, body.touch .menu-foot .esc-text { display: none; }
   .set-row .label { width: 100%; }
   .menu-foot { padding: 10px 16px 18px; }
 }
+
+/* Slow-motion moments: cinema bars slide in, the edges darken. */
+#cine { position: fixed; inset: 0; pointer-events: none; }
+#cine::before, #cine::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height 0.35s ease;
+}
+#cine::before { top: 0; }
+#cine::after { bottom: 0; }
+body.cine #cine::before, body.cine #cine::after { height: 9vh; }
+#cine { background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0)); transition: background 0.4s; }
+body.cine #cine { background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.45)); }
