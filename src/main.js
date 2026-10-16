@@ -28,6 +28,7 @@ import { X_HANDLE } from './config.js';
 import { createTelemetry } from './telemetry.js';
 import { SpeedLines } from './speedfx.js';
 import { createLeaderboard, renderBoard } from './leaderboard.js';
+import { RankFx } from './rankfx.js';
 
 // ?touch forces the phone layout (handy for testing on a desktop).
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
@@ -88,9 +89,31 @@ const rankPane = () => document.querySelector('#menu section[data-pane="ranking"
 function renderRanking() {
   renderBoard(document.getElementById('menu-rank'), lb.data, { name: lb.name, onName: (n) => lb.setName(n, score.points) });
 }
+// Leaderboard moments: moving up into or within the top 10 sets off a celebration,
+// being pushed down from it a warning. The first answer after loading is the baseline.
+const rankFx = new RankFx({ audio, touch: isTouch });
+let lastRank = null, rankKnown = false;
+function rankMoment(data) {
+  const r = data?.me?.rank ?? null;
+  if (!rankKnown) { rankKnown = true; lastRank = r; return; }
+  if (r && r <= 10 && (lastRank === null || r < lastRank)) {
+    rankFx.celebrate({ rank: r, from: lastRank, passed: data.top[r]?.name }); // the player now just below you
+    if (r <= 3) score.requestSlowmo(0.8, 0.45);
+  } else if (r && lastRank && lastRank <= 10 && r > lastRank) {
+    rankFx.overtaken({ rank: r, by: data.top[r - 2]?.name }); // the player now just above you
+  }
+  if (r !== lastRank) {
+    const el = document.getElementById('rank');
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  }
+  lastRank = r;
+}
 const lb = createLeaderboard({
   onUpdate(data) {
     hud.setRank(data);
+    rankMoment(data);
     if (menu.open && rankPane()?.classList.contains('active')) renderRanking();
   },
 });
@@ -515,4 +538,4 @@ function tick(realDt, ctl) {
 frame();
 
 // Handy for debugging from the console.
-window.__game = { lb, speedLines, models, menu, details, peds, honk, vehicle, car, world, rig, scene, camera, renderer, hud, smoke, traffic, atmosphere, neon, rings, score, tick, start: () => playBtn.click(), render: () => (composer ? composer.render() : renderer.render(scene, camera)) };
+window.__game = { lb, rankFx, rankMoment, speedLines, models, menu, details, peds, honk, vehicle, car, world, rig, scene, camera, renderer, hud, smoke, traffic, atmosphere, neon, rings, score, tick, start: () => playBtn.click(), render: () => (composer ? composer.render() : renderer.render(scene, camera)) };
