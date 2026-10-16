@@ -1,0 +1,6 @@
+# Work files that don't belong on the live site.
+tools/
+export/
+.claude/
+README.md
+models/README.md

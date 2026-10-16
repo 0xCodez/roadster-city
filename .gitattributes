@@ -1,0 +1,6 @@
+# Keep text files with LF endings in the repo on every OS.
+* text=auto eol=lf
+*.glb binary
+*.blend binary
+*.jpg binary
+*.webp binary
